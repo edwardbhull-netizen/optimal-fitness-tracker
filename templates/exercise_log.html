@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Log Exercise — Optimal Fitness{% endblock %}
+{% block content %}
+{# This template is a standalone page fallback — the modal in session.html is the primary UX #}
+
+<div class="topbar">
+  <a href="javascript:history.back()" class="back-btn">‹</a>
+  <span class="topbar-title">Log Set</span>
+  <span style="width:44px;"></span>
+</div>
+
+<div class="page" style="padding-top:20px;">
+  <div class="card">
+    <p class="text-muted text-center">
+      Use the session page to log sets. This page is a fallback.
+    </p>
+    <a href="/client/home" class="btn btn-primary mt-16">Go to Home</a>
+  </div>
+</div>
+
+{% endblock %}

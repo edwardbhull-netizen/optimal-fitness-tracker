@@ -1,0 +1,440 @@
+import os
+import re
+import shutil
+from typing import Optional
+from datetime import datetime
+
+from fastapi import FastAPI, Request, Form, Response, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+
+import database as db
+
+# ── App setup ─────────────────────────────────────────────────────────────────
+
+BASE_DIR = os.path.dirname(__file__)
+
+app = FastAPI(title="Optimal Fitness Tracker")
+app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+SECRET_KEY = os.environ.get("SECRET_KEY", "of-solihull-tracker-secret-2026")
+serializer = URLSafeTimedSerializer(SECRET_KEY)
+
+SESSION_COOKIE = "of_session"
+SESSION_MAX_AGE = 60 * 60 * 24 * 7  # 7 days
+
+
+# ── Startup ───────────────────────────────────────────────────────────────────
+
+@app.on_event("startup")
+def startup():
+    db.init_db()
+
+
+# ── Session helpers ───────────────────────────────────────────────────────────
+
+def create_session_cookie(data: dict) -> str:
+    return serializer.dumps(data)
+
+
+def read_session_cookie(request: Request) -> Optional[dict]:
+    token = request.cookies.get(SESSION_COOKIE)
+    if not token:
+        return None
+    try:
+        return serializer.loads(token, max_age=SESSION_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return None
+
+
+def require_client(request: Request):
+    session = read_session_cookie(request)
+    if not session or "client_id" not in session:
+        return None
+    return session
+
+
+def require_coach(request: Request):
+    session = read_session_cookie(request)
+    if not session or not session.get("is_coach"):
+        return None
+    return session
+
+
+# ── Programme parser ──────────────────────────────────────────────────────────
+
+def parse_programme(md_path: str) -> dict:
+    """
+    Parse a programme .md file and return a dict like:
+    {
+        "DAY A": [{"label": "A", "exercise": "SSB Squat", "sets": "5", "reps": "5", "rest": "3 min", "notes": "..."}, ...],
+        "DAY B": [...],
+        ...
+    }
+    """
+    if not md_path or not os.path.exists(md_path):
+        return {}
+
+    with open(md_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    days = {}
+    current_day = None
+    current_exercises = []
+
+    # Split into lines
+    lines = content.split("\n")
+
+    for line in lines:
+        # Match day headers like: ## DAY A — LOWER BODY or ## Day A or ## DAY A
+        day_match = re.match(r"^#{1,3}\s+(DAY\s+[A-Z])", line, re.IGNORECASE)
+        if day_match:
+            if current_day and current_exercises:
+                days[current_day] = current_exercises
+            current_day = day_match.group(1).upper()
+            current_exercises = []
+            continue
+
+        # Match table rows (skip header and separator rows)
+        if current_day and line.strip().startswith("|"):
+            # Skip separator rows like |---|---|
+            if re.match(r"^\|[\s\-\|]+\|$", line.strip()):
+                continue
+            # Skip header rows
+            if re.search(r"\|\s*label\s*\|", line, re.IGNORECASE):
+                continue
+
+            parts = [p.strip() for p in line.strip().strip("|").split("|")]
+            if len(parts) >= 3:
+                # Clean bold markdown from label
+                label = re.sub(r"\*+", "", parts[0]).strip()
+                exercise = parts[1].strip() if len(parts) > 1 else ""
+                sets = parts[2].strip() if len(parts) > 2 else ""
+                reps = parts[3].strip() if len(parts) > 3 else ""
+                rest = parts[4].strip() if len(parts) > 4 else ""
+                notes = parts[5].strip() if len(parts) > 5 else ""
+
+                if exercise and exercise.lower() not in ("exercise", ""):
+                    current_exercises.append({
+                        "label": label,
+                        "exercise": exercise,
+                        "sets": sets,
+                        "reps": reps,
+                        "rest": rest,
+                        "notes": notes,
+                    })
+
+    # Catch last day
+    if current_day and current_exercises:
+        days[current_day] = current_exercises
+
+    return days
+
+
+# ── Routes ────────────────────────────────────────────────────────────────────
+
+@app.get("/", response_class=HTMLResponse)
+async def login_page(request: Request):
+    # If already logged in, redirect
+    session = read_session_cookie(request)
+    if session:
+        if session.get("is_coach"):
+            return RedirectResponse("/coach", status_code=302)
+        if session.get("client_id"):
+            return RedirectResponse("/client/home", status_code=302)
+    clients = db.get_all_clients()
+    return templates.TemplateResponse("login.html", {"request": request, "clients": clients})
+
+
+@app.post("/login")
+async def login(
+    request: Request,
+    response: Response,
+    login_type: str = Form(...),
+    name: str = Form(default=""),
+    pin: str = Form(...),
+):
+    if login_type == "coach":
+        coach = db.get_coach_by_pin(pin)
+        if not coach:
+            clients = db.get_all_clients()
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "clients": clients, "error": "Incorrect coach PIN."},
+                status_code=401,
+            )
+        token = create_session_cookie({"is_coach": True, "coach_id": coach["id"], "coach_name": coach["name"]})
+        resp = RedirectResponse("/coach", status_code=302)
+        resp.set_cookie(SESSION_COOKIE, token, max_age=SESSION_MAX_AGE, httponly=True, samesite="lax")
+        return resp
+
+    else:
+        client = db.get_client_by_name_pin(name, pin)
+        if not client:
+            clients = db.get_all_clients()
+            return templates.TemplateResponse(
+                "login.html",
+                {"request": request, "clients": clients, "error": "Name or PIN incorrect. Try again."},
+                status_code=401,
+            )
+        token = create_session_cookie({"client_id": client["id"], "client_name": client["name"]})
+        resp = RedirectResponse("/client/home", status_code=302)
+        resp.set_cookie(SESSION_COOKIE, token, max_age=SESSION_MAX_AGE, httponly=True, samesite="lax")
+        return resp
+
+
+@app.post("/logout")
+async def logout():
+    resp = RedirectResponse("/", status_code=302)
+    resp.delete_cookie(SESSION_COOKIE)
+    return resp
+
+
+# ── Client routes ─────────────────────────────────────────────────────────────
+
+@app.get("/client/home", response_class=HTMLResponse)
+async def client_home(request: Request):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    client = db.get_client_by_id(session["client_id"])
+    if not client:
+        return RedirectResponse("/", status_code=302)
+
+    last_session = db.get_last_session(client["id"])
+    programme = parse_programme(client.get("programme_path"))
+    days = list(programme.keys()) if programme else ["DAY A", "DAY B", "DAY C"]
+
+    return templates.TemplateResponse("client_home.html", {
+        "request": request,
+        "client": client,
+        "last_session": last_session,
+        "days": days,
+    })
+
+
+@app.get("/client/session/{day}", response_class=HTMLResponse)
+async def session_page(request: Request, day: str):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    client = db.get_client_by_id(session["client_id"])
+    if not client:
+        return RedirectResponse("/", status_code=302)
+
+    day_key = day.upper().replace("-", " ")  # e.g. "day-a" → "DAY A"
+    programme = parse_programme(client.get("programme_path"))
+    exercises = programme.get(day_key, [])
+
+    # Check if there's an active (incomplete) session for today with this day
+    today = datetime.now().strftime("%Y-%m-%d")
+    conn = db.get_db()
+    active = conn.execute(
+        "SELECT * FROM sessions WHERE client_id = ? AND date = ? AND programme_day = ? AND completed_at IS NULL ORDER BY id DESC LIMIT 1",
+        (client["id"], today, day_key)
+    ).fetchone()
+    conn.close()
+
+    active_session = dict(active) if active else None
+
+    return templates.TemplateResponse("session.html", {
+        "request": request,
+        "client": client,
+        "day": day_key,
+        "exercises": exercises,
+        "active_session": active_session,
+    })
+
+
+@app.post("/client/session/start")
+async def start_session(
+    request: Request,
+    programme_day: str = Form(...),
+):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    session_id = db.create_session(session["client_id"], programme_day.upper())
+    return JSONResponse({"session_id": session_id})
+
+
+@app.post("/client/session/{session_id}/complete")
+async def complete_session(
+    request: Request,
+    session_id: int,
+    notes: str = Form(default=""),
+):
+    s = require_client(request)
+    if not s:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    sess = db.get_session_by_id(session_id)
+    if not sess or sess["client_id"] != s["client_id"]:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    db.complete_session(session_id, notes)
+    return JSONResponse({"ok": True})
+
+
+@app.post("/client/log-set")
+async def log_set_route(
+    request: Request,
+    session_id: int = Form(...),
+    exercise_name: str = Form(...),
+    label: str = Form(default=""),
+    set_number: int = Form(default=1),
+    reps: Optional[int] = Form(default=None),
+    weight_kg: Optional[float] = Form(default=None),
+    duration_seconds: Optional[int] = Form(default=None),
+    calories: Optional[int] = Form(default=None),
+    rpe: Optional[int] = Form(default=None),
+    notes: str = Form(default=""),
+):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    # Verify session belongs to client
+    sess = db.get_session_by_id(session_id)
+    if not sess or sess["client_id"] != session["client_id"]:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    log_id = db.log_set(
+        session_id=session_id,
+        exercise_name=exercise_name,
+        label=label,
+        set_number=set_number,
+        reps=reps,
+        weight_kg=weight_kg,
+        duration_seconds=duration_seconds,
+        calories=calories,
+        rpe=rpe,
+        notes=notes,
+    )
+    return JSONResponse({"log_id": log_id, "ok": True})
+
+
+@app.delete("/client/log/{log_id}")
+async def delete_log(request: Request, log_id: int):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    db.delete_log(log_id)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/client/exercise/{exercise_name}/history")
+async def exercise_history(request: Request, exercise_name: str):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    last_sets = db.get_last_session_exercise(session["client_id"], exercise_name)
+    pb = db.get_exercise_pb(session["client_id"], exercise_name)
+
+    return JSONResponse({
+        "last_sets": last_sets,
+        "pb": pb,
+    })
+
+
+@app.get("/client/session-logs/{session_id}")
+async def get_session_logs(request: Request, session_id: int):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    sess = db.get_session_by_id(session_id)
+    if not sess or sess["client_id"] != session["client_id"]:
+        return JSONResponse({"error": "Not found"}, status_code=404)
+
+    logs = db.get_session_logs(session_id)
+    return JSONResponse({"logs": logs})
+
+
+@app.get("/client/history", response_class=HTMLResponse)
+async def client_history(request: Request):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    client = db.get_client_by_id(session["client_id"])
+    sessions = db.get_client_sessions(session["client_id"], limit=30)
+    pbs = db.get_recent_pbs(session["client_id"])
+
+    # Attach logs to each session for display
+    for s in sessions:
+        s["logs"] = db.get_session_logs(s["id"])
+
+    return templates.TemplateResponse("history.html", {
+        "request": request,
+        "client": client,
+        "sessions": sessions,
+        "pbs": pbs,
+    })
+
+
+# ── Coach routes ──────────────────────────────────────────────────────────────
+
+@app.get("/coach", response_class=HTMLResponse)
+async def coach_dashboard(request: Request):
+    session = require_coach(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    clients = db.get_all_clients_with_stats()
+    for c in clients:
+        c["sessions_this_week"] = len(db.get_sessions_this_week(c["id"]))
+        c["recent_pbs"] = db.get_recent_pbs(c["id"], limit=3)
+
+    return templates.TemplateResponse("coach.html", {
+        "request": request,
+        "coach_name": session.get("coach_name", "Coach"),
+        "clients": clients,
+    })
+
+
+@app.get("/coach/client/{client_id}", response_class=HTMLResponse)
+async def coach_client_view(request: Request, client_id: int):
+    session = require_coach(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    client = db.get_client_by_id(client_id)
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    sessions = db.get_client_sessions(client_id, limit=20)
+    for s in sessions:
+        s["logs"] = db.get_session_logs(s["id"])
+
+    pbs = db.get_recent_pbs(client_id, limit=10)
+
+    return templates.TemplateResponse("history.html", {
+        "request": request,
+        "client": client,
+        "sessions": sessions,
+        "pbs": pbs,
+        "is_coach_view": True,
+    })
+
+
+@app.post("/coach/add-client")
+async def add_client(
+    request: Request,
+    name: str = Form(...),
+    pin: str = Form(...),
+    programme_path: str = Form(default=""),
+):
+    session = require_coach(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    client_id = db.add_client(name, pin, programme_path or None)
+    return JSONResponse({"client_id": client_id, "ok": True})

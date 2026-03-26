@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}History — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  {% if is_coach_view %}
+  <a href="/coach" class="back-btn">‹</a>
+  {% else %}
+  <a href="/client/home" class="back-btn">‹</a>
+  {% endif %}
+  <span class="topbar-title">
+    {% if is_coach_view %}{{ client.name }}'s History{% else %}My History{% endif %}
+  </span>
+  <span style="width:44px;"></span>
+</div>
+
+<div class="page">
+
+  {% if pbs %}
+  <div class="section-header">
+    <span class="section-title">Personal Bests</span>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+    {% for pb in pbs %}
+    <div class="badge badge-green" style="font-size:0.78rem;padding:5px 10px;">
+      {{ pb.exercise_name }}
+      {% if pb.best_weight %} · {{ pb.best_weight }}kg{% endif %}
+      {% if pb.best_reps %} · {{ pb.best_reps }} reps{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="section-header">
+    <span class="section-title">Sessions</span>
+    <span class="text-muted">{{ sessions|length }} total</span>
+  </div>
+
+  {% if sessions %}
+    {% for s in sessions %}
+    <div class="history-session">
+      <div class="history-session-header">
+        <div>
+          <div style="font-weight:700;font-size:0.95rem;">{{ s.date }}</div>
+          <div style="font-size:0.8rem;color:var(--grey-400);margin-top:2px;">
+            <span class="badge badge-day" style="font-size:0.7rem;">{{ s.programme_day or 'Open' }}</span>
+            &nbsp;{{ s.logs|length }} sets logged
+            {% if s.completed_at %}
+            &nbsp;<span class="badge badge-green" style="font-size:0.7rem;">Complete</span>
+            {% endif %}
+          </div>
+        </div>
+        <span class="history-arrow">▼</span>
+      </div>
+
+      <div class="history-session-body">
+        {% if s.logs %}
+          {% set grouped = {} %}
+          {% for log in s.logs %}
+            {% if log.exercise_name not in grouped %}
+              {% set _ = grouped.update({log.exercise_name: []}) %}
+            {% endif %}
+            {% set _ = grouped[log.exercise_name].append(log) %}
+          {% endfor %}
+
+          {% for exercise_name, logs in grouped.items() %}
+          <div class="log-group">
+            <div class="log-group-name">{{ exercise_name }}</div>
+            {% for log in logs %}
+            <div class="log-entry">
+              Set {{ log.set_number }}:
+              {% if log.weight_kg %}<strong>{{ log.weight_kg }}kg</strong>{% endif %}
+              {% if log.reps %} × {{ log.reps }} reps{% endif %}
+              {% if log.duration_seconds %} · {{ log.duration_seconds }}s{% endif %}
+              {% if log.calories %} · {{ log.calories }} cal{% endif %}
+              {% if log.rpe %} · RPE {{ log.rpe }}{% endif %}
+              {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted" style="font-size:0.85rem;">No sets logged for this session.</p>
+        {% endif %}
+
+        {% if s.notes %}
+        <div style="margin-top:8px;font-size:0.82rem;color:var(--grey-600);font-style:italic;">
+          Notes: {{ s.notes }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📋</div>
+    <p>No sessions yet. Start your first one.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

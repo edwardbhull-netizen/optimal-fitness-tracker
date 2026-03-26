@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Login — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="login-page">
+  <img src="/static/logo.png" alt="Optimal Fitness" class="login-logo">
+  <div class="login-brand">Optimal Fitness Solihull</div>
+
+  {% if error %}
+  <div class="alert alert-error" style="max-width:360px;width:100%;margin-bottom:16px;">
+    {{ error }}
+  </div>
+  {% endif %}
+
+  <div class="login-card">
+    <div class="login-tabs">
+      <button class="login-tab active" data-target="client">Member</button>
+      <button class="login-tab" data-target="coach">Coach</button>
+    </div>
+
+    <!-- Client login -->
+    <div id="client-form">
+      <form method="POST" action="/login">
+        <input type="hidden" name="login_type" value="client">
+        <div class="form-group">
+          <label for="name">Your Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder="e.g. Sarah"
+            list="client-names"
+            autocomplete="off"
+            required
+          >
+          <datalist id="client-names">
+            {% for c in clients %}
+            <option value="{{ c.name }}">
+            {% endfor %}
+          </datalist>
+        </div>
+        <div class="form-group">
+          <label for="pin">4-Digit PIN</label>
+          <input
+            type="password"
+            id="pin"
+            name="pin"
+            class="pin-input"
+            maxlength="4"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            placeholder="····"
+            required
+          >
+        </div>
+        <button type="submit" class="btn btn-primary">Log In</button>
+      </form>
+    </div>
+
+    <!-- Coach login -->
+    <div id="coach-form" class="hidden">
+      <form method="POST" action="/login">
+        <input type="hidden" name="login_type" value="coach">
+        <input type="hidden" name="name" value="coach">
+        <div class="form-group">
+          <label for="coach-pin">Coach PIN</label>
+          <input
+            type="password"
+            id="coach-pin"
+            name="pin"
+            class="pin-input"
+            maxlength="4"
+            inputmode="numeric"
+            pattern="[0-9]{4}"
+            placeholder="····"
+            required
+          >
+        </div>
+        <button type="submit" class="btn btn-primary">Coach Login</button>
+      </form>
+    </div>
+  </div>
+
+  <p class="text-muted mt-24 text-center" style="font-size:0.75rem;">
+    No account? Ask your coach to set one up.
+  </p>
+</div>
+
+{% endblock %}

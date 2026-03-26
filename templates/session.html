@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+{% block title %}{{ day }} Session — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <a href="/client/home" class="back-btn">‹</a>
+  <span class="topbar-title">{{ day }}</span>
+  <span style="width:44px;"></span>
+</div>
+
+<div class="page">
+  <!-- Hidden field for JS -->
+  <input type="hidden" id="programme-day" value="{{ day }}">
+
+  <!-- Progress bar -->
+  <div style="padding-top:12px;">
+    <div class="session-progress">
+      <div class="session-progress-bar" id="progress-bar" style="width:0%"></div>
+    </div>
+    <div style="font-size:0.8rem;color:var(--grey-400);margin-top:4px;" id="progress-label">
+      0 / {{ exercises|length }} exercises logged
+    </div>
+  </div>
+
+  <!-- Session not started yet -->
+  {% if not active_session %}
+  <div id="session-locked" style="padding:24px 0;">
+    <div class="card">
+      <p style="margin-bottom:16px;color:var(--grey-600);">
+        Tap below to start logging this session. Your sets will be saved as you go.
+      </p>
+      <button id="start-session-btn" class="btn btn-primary">Start Session</button>
+    </div>
+  </div>
+  {% else %}
+  <!-- Already have an active session — show immediately -->
+  <div id="session-locked" class="hidden"></div>
+  {% endif %}
+
+  <!-- Exercise list -->
+  <div id="session-exercises" class="{% if not active_session %}hidden{% endif %}" style="padding-top:12px;">
+    {% if exercises %}
+      {% for ex in exercises %}
+      {% set safe_id = ex.exercise | replace(" ", "_") | replace("/", "_") | replace("-", "_") | lower %}
+      <div class="exercise-card" id="card_{{ safe_id }}">
+        <div class="exercise-header">
+          <div class="exercise-label-badge">{{ ex.label or '—' }}</div>
+          <div class="exercise-info">
+            <div class="exercise-name">{{ ex.exercise }}</div>
+            <div class="exercise-target">
+              {{ ex.sets }} sets × {{ ex.reps }}
+              {% if ex.rest %} · Rest {{ ex.rest }}{% endif %}
+            </div>
+            {% if ex.notes %}
+            <div class="exercise-target" style="margin-top:4px;font-style:italic;">{{ ex.notes }}</div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="exercise-prev" id="prev_{{ safe_id }}">
+          Loading previous performance...
+        </div>
+
+        <div class="sets-logged" style="display:none;"></div>
+
+        <div class="exercise-actions">
+          <button
+            class="btn btn-outline btn-sm log-set-btn"
+            data-exercise="{{ ex.exercise }}"
+            data-label="{{ ex.label }}"
+          >
+            + Log Set
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="card mt-16">
+        <p class="text-muted">No programme loaded for {{ day }}. Ask your coach to set up your programme file.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Finish session bar -->
+<div class="finish-bar {% if not active_session %}hidden{% endif %}" id="finish-bar">
+  <button id="finish-session-btn" class="btn btn-primary">Finish Session</button>
+</div>
+
+<!-- Log Set Modal -->
+<div class="modal-overlay" id="log-modal-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-exercise-name">Exercise</div>
+    <div class="modal-subtitle" id="modal-set-label">Logging Set 1</div>
+
+    <div id="modal-prev-data" style="font-size:0.82rem;color:var(--grey-600);margin-bottom:16px;padding:10px;background:var(--grey-50);border-radius:8px;line-height:1.6;">
+    </div>
+
+    <form id="log-form">
+      <input type="hidden" id="set-number-input" value="1">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="weight-input">Weight (kg)</label>
+          <input type="number" id="weight-input" name="weight_kg" step="0.5" min="0" placeholder="0" inputmode="decimal">
+        </div>
+        <div class="form-group">
+          <label for="reps-input">Reps</label>
+          <input type="number" id="reps-input" name="reps" min="0" placeholder="0" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="duration-input">Duration (sec)</label>
+          <input type="number" id="duration-input" name="duration_seconds" min="0" placeholder="—" inputmode="numeric">
+        </div>
+        <div class="form-group">
+          <label for="calories-input">Calories</label>
+          <input type="number" id="calories-input" name="calories" min="0" placeholder="—" inputmode="numeric">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>RPE (effort)</label>
+        <input type="hidden" id="rpe-input" name="rpe">
+        <div class="rpe-grid">
+          {% for n in range(1, 11) %}
+          <button type="button" class="rpe-btn" data-rpe="{{ n }}">{{ n }}</button>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="notes-input">Notes</label>
+        <input type="text" id="notes-input" name="notes" placeholder="Optional">
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:8px;">
+        <button type="button" class="btn btn-secondary" style="flex:1;" onclick="closeLogModal()">Cancel</button>
+        <button type="submit" id="log-submit-btn" class="btn btn-primary" style="flex:2;">Log Set</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Pre-load previous performance for each exercise
+document.addEventListener('DOMContentLoaded', () => {
+  {% for ex in exercises %}
+  {% set safe_id = ex.exercise | replace(" ", "_") | replace("/", "_") | replace("-", "_") | lower %}
+  fetch('/client/exercise/{{ ex.exercise | urlencode }}/history')
+    .then(r => r.json())
+    .then(data => {
+      const el = document.getElementById('prev_{{ safe_id }}');
+      if (!el) return;
+      let html = '';
+      if (data.last_sets && data.last_sets.length > 0) {
+        const sets = data.last_sets.slice(0, 4);
+        html += '<strong>Last:</strong> ' + sets.map(s => {
+          const p = [];
+          if (s.weight_kg) p.push(s.weight_kg + 'kg');
+          if (s.reps) p.push(s.reps + 'r');
+          return `S${s.set_number}: ${p.join(' ')}`;
+        }).join(' · ');
+      }
+      if (data.pb && (data.pb.best_weight || data.pb.best_reps)) {
+        if (html) html += '  ·  ';
+        html += '<strong>PB:</strong> ';
+        if (data.pb.best_weight) html += data.pb.best_weight + 'kg';
+        if (data.pb.best_weight && data.pb.best_reps) html += '/';
+        if (data.pb.best_reps) html += data.pb.best_reps + ' reps';
+      }
+      el.innerHTML = html || '<span style="color:var(--grey-400)">No previous data</span>';
+    })
+    .catch(() => {
+      const el = document.getElementById('prev_{{ safe_id }}');
+      if (el) el.innerHTML = '<span style="color:var(--grey-400)">—</span>';
+    });
+  {% endfor %}
+
+  {% if active_session %}
+  activeSessionId = {{ active_session.id }};
+  sessionStorage.setItem('session_id_{{ day }}', {{ active_session.id }});
+  loadSessionLogs();
+  {% endif %}
+});
+</script>
+
+{% endblock %}

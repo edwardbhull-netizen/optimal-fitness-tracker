@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Home — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <span style="width:36px;"></span>
+  <span class="topbar-title">My Training</span>
+  <form method="POST" action="/logout" style="margin:0;">
+    <button type="submit" class="topbar-action">Log out</button>
+  </form>
+</div>
+
+<div class="page">
+  <div class="welcome-banner">
+    <div class="welcome-name">Hey, {{ client.name.split(' ')[0] }} 👋</div>
+    {% if last_session %}
+    <div class="last-session-info">
+      Last session: {{ last_session.date }} —
+      <span class="badge badge-day">{{ last_session.programme_day or 'Open' }}</span>
+    </div>
+    {% else %}
+    <div class="last-session-info">No sessions yet — let's get started.</div>
+    {% endif %}
+  </div>
+
+  <div class="section-header">
+    <span class="section-title">Start a session</span>
+  </div>
+
+  <div class="day-grid">
+    {% for day in days %}
+    <a href="/client/session/{{ day.lower().replace(' ', '-') }}" class="day-card">
+      <div>
+        <div class="day-card-label">{{ day }}</div>
+        <div class="day-card-name">
+          {% if 'A' in day %}Lower Body{% elif 'B' in day %}Upper Body{% elif 'C' in day %}Full Body{% else %}Training{% endif %}
+        </div>
+        <div class="day-card-count">Tap to start</div>
+      </div>
+      <span class="day-card-arrow">›</span>
+    </a>
+    {% else %}
+    <div class="card">
+      <p class="text-muted">No programme loaded. Ask your coach to set up your programme.</p>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="section-header mt-16">
+    <span class="section-title">Recent activity</span>
+    <a href="/client/history" class="btn btn-ghost btn-sm">View all</a>
+  </div>
+
+  {% if last_session %}
+  <a href="/client/history" class="card" style="text-decoration:none;color:var(--black);display:block;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">{{ last_session.date }}</div>
+        <div class="card-subtitle">{{ last_session.programme_day or 'Open session' }}</div>
+      </div>
+      <span class="badge {% if last_session.completed_at %}badge-green{% else %}badge-grey{% endif %}">
+        {% if last_session.completed_at %}Done{% else %}In progress{% endif %}
+      </span>
+    </div>
+  </a>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🏋️</div>
+    <p>No sessions yet. Pick a day above and get going.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

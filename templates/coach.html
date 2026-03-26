@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Coach Dashboard — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <span style="width:36px;"></span>
+  <span class="topbar-title">Coach Dashboard</span>
+  <form method="POST" action="/logout" style="margin:0;">
+    <button type="submit" class="topbar-action">Log out</button>
+  </form>
+</div>
+
+<div class="page">
+
+  <div class="welcome-banner">
+    <div class="welcome-name">Hey, {{ coach_name }} 👋</div>
+  </div>
+
+  <!-- Summary stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-number">{{ clients|length }}</div>
+      <div class="stat-label">Members</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ clients|selectattr('sessions_this_week', 'gt', 0)|list|length }}</div>
+      <div class="stat-label">Active This Week</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ clients|sum(attribute='total_sessions') }}</div>
+      <div class="stat-label">Total Sessions</div>
+    </div>
+  </div>
+
+  <!-- Client list -->
+  <div class="section-header">
+    <span class="section-title">Members</span>
+    <button id="toggle-add-client" class="btn btn-ghost btn-sm">+ Add</button>
+  </div>
+
+  {% if clients %}
+    {% for c in clients %}
+    <a href="/coach/client/{{ c.id }}" class="client-row">
+      <div class="client-avatar">{{ c.name[0].upper() }}</div>
+      <div class="client-info">
+        <div class="client-name">{{ c.name }}</div>
+        <div class="client-meta">
+          {% if c.last_session_date %}
+            Last: {{ c.last_session_date }}
+          {% else %}
+            No sessions yet
+          {% endif %}
+          &nbsp;·&nbsp;
+          <span style="color:{% if c.sessions_this_week > 0 %}var(--green){% else %}var(--grey-400){% endif %}">
+            {{ c.sessions_this_week }} this week
+          </span>
+        </div>
+        {% if c.recent_pbs %}
+        <div class="client-meta" style="margin-top:3px;">
+          PBs:
+          {% for pb in c.recent_pbs %}
+            <span class="badge badge-green" style="font-size:0.65rem;padding:2px 6px;">
+              {{ pb.exercise_name }}{% if pb.best_weight %} {{ pb.best_weight }}kg{% endif %}
+            </span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <span class="client-arrow">›</span>
+    </a>
+    {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <p>No members yet. Add your first one below.</p>
+  </div>
+  {% endif %}
+
+  <!-- Add client section -->
+  <div class="add-client-section hidden" id="add-client-section">
+    <h3 style="margin-bottom:16px;">Add New Member</h3>
+    <form id="add-client-form">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" name="name" placeholder="e.g. Sarah Johnson" required>
+      </div>
+      <div class="form-group">
+        <label>4-Digit PIN</label>
+        <input type="text" name="pin" class="pin-input" maxlength="4" pattern="[0-9]{4}"
+               inputmode="numeric" placeholder="1234" required>
+      </div>
+      <div class="form-group">
+        <label>Programme File Path (optional)</label>
+        <input type="text" name="programme_path"
+               placeholder="/path/to/client_programme.md">
+      </div>
+      <button type="submit" class="btn btn-primary">Add Member</button>
+    </form>
+  </div>
+
+</div>
+
+{% endblock %}
