@@ -57,6 +57,15 @@ def init_db():
             logged_at TEXT DEFAULT (datetime('now')),
             FOREIGN KEY (session_id) REFERENCES sessions(id)
         );
+
+        CREATE TABLE IF NOT EXISTS weekly_schedule (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            week_start TEXT NOT NULL,
+            day_of_week TEXT NOT NULL,
+            session_name TEXT,
+            session_type TEXT,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
     """)
 
     # Seed coaches if not already present
@@ -80,6 +89,71 @@ def init_db():
 
     conn.commit()
     conn.close()
+
+    seed_current_week_hybrid()
+
+
+def get_week_start(date_str=None):
+    """Get the Monday of the current (or given) week as YYYY-MM-DD."""
+    from datetime import date, timedelta
+    d = date.today() if not date_str else datetime.strptime(date_str, "%Y-%m-%d").date()
+    monday = d - timedelta(days=d.weekday())
+    return monday.strftime("%Y-%m-%d")
+
+
+def get_weekly_schedule(week_start=None):
+    """Get the schedule for a given week (defaults to current week)."""
+    if not week_start:
+        week_start = get_week_start()
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM weekly_schedule WHERE week_start = ? ORDER BY id",
+        (week_start,)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def set_weekly_schedule(week_start, day_of_week, session_name, session_type):
+    """Set or update the session for a specific day."""
+    conn = get_db()
+    existing = conn.execute(
+        "SELECT id FROM weekly_schedule WHERE week_start = ? AND day_of_week = ?",
+        (week_start, day_of_week)
+    ).fetchone()
+    if existing:
+        conn.execute(
+            "UPDATE weekly_schedule SET session_name=?, session_type=?, updated_at=datetime('now') WHERE week_start=? AND day_of_week=?",
+            (session_name, session_type, week_start, day_of_week)
+        )
+    else:
+        conn.execute(
+            "INSERT INTO weekly_schedule (week_start, day_of_week, session_name, session_type) VALUES (?,?,?,?)",
+            (week_start, day_of_week, session_name, session_type)
+        )
+    conn.commit()
+    conn.close()
+
+
+def seed_current_week_hybrid():
+    """Seed the current week with example sessions. Only runs if no schedule exists for this week."""
+    week_start = get_week_start()
+    conn = get_db()
+    existing = conn.execute("SELECT id FROM weekly_schedule WHERE week_start = ? LIMIT 1", (week_start,)).fetchone()
+    conn.close()
+    if existing:
+        return
+
+    schedule = [
+        ("Monday",    "9-9-9",        "BURN"),
+        ("Tuesday",   "The Builder",   "STRONG"),
+        ("Wednesday", "Triple Hit",    "HYBRID"),
+        ("Thursday",  "The Ladder",    "BURN"),
+        ("Friday",    "Heavy Metal",   "STRONG"),
+        ("Saturday",  "Halo",         "HYBRID"),
+    ]
+    for day, session, stype in schedule:
+        set_weekly_schedule(week_start, day, session, stype)
 
 
 def get_all_clients():

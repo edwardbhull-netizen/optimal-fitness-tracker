@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Set This Week's Schedule — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <a href="/coach" class="topbar-back">‹</a>
+  <span class="topbar-title">Set This Week's Schedule</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  <div style="font-size:0.8rem;color:var(--grey-400);margin-bottom:20px;">
+    Week of {{ week_start }}
+  </div>
+
+  <form method="POST" action="/coach/schedule">
+    {% for day_row in schedule %}
+    <div class="form-group" style="margin-bottom:16px;">
+      <label style="font-weight:700;font-size:0.9rem;margin-bottom:6px;display:block;">
+        {{ day_row.day }}
+      </label>
+      <select name="{{ day_row.day }}" style="width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--grey-200);background:var(--card-bg);font-size:0.95rem;color:var(--black);">
+        <option value="">Rest Day</option>
+        {% for stype, slist in sessions_data.items() %}
+        <optgroup label="{{ stype }}">
+          {% for s in slist %}
+          <option value="{{ s.name }}"
+            {% if day_row.session_name == s.name %}selected{% endif %}>
+            {{ s.name }}
+          </option>
+          {% endfor %}
+        </optgroup>
+        {% endfor %}
+      </select>
+    </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;padding:16px;">
+      Save Schedule
+    </button>
+  </form>
+
+</div>
+
+{% endblock %}

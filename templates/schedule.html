@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}This Week — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <a href="/client/home" class="topbar-back">‹</a>
+  <span class="topbar-title">This Week</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  {% for item in schedule %}
+  {% set is_today = (item.day == today_name) %}
+
+  {% if item.session_name %}
+  <a href="/group-session/{{ item.session_name | urlencode }}"
+     class="schedule-card {% if is_today %}schedule-card--today{% endif %}">
+    <div class="schedule-card-left">
+      <div class="schedule-day">{{ item.day[:3] | upper }}
+        <span class="schedule-date">{{ item.date }}</span>
+      </div>
+    </div>
+    <div class="schedule-card-body">
+      <div class="schedule-session-name">{{ item.session_name }}</div>
+      <div class="schedule-meta">
+        <span class="badge
+          {% if item.session_type == 'BURN' %}badge-orange
+          {% elif item.session_type == 'STRONG' %}badge-red
+          {% elif item.session_type == 'HYBRID' %}badge-green
+          {% else %}badge-grey{% endif %}">
+          {{ item.session_type }}
+        </span>
+        {% if item.competition %}
+        <span class="schedule-competition">{{ item.competition }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <span class="schedule-arrow">›</span>
+  </a>
+
+  {% else %}
+  <div class="schedule-card schedule-card--rest {% if is_today %}schedule-card--today{% endif %}">
+    <div class="schedule-card-left">
+      <div class="schedule-day">{{ item.day[:3] | upper }}
+        <span class="schedule-date">{{ item.date }}</span>
+      </div>
+    </div>
+    <div class="schedule-card-body">
+      <div class="schedule-session-name schedule-session-name--rest">Rest Day</div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% endfor %}
+
+</div>
+
+<style>
+.schedule-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 10px;
+  text-decoration: none;
+  color: var(--black);
+  border-left: 4px solid transparent;
+}
+.schedule-card--today {
+  border-left: 4px solid var(--red);
+}
+.schedule-card--rest {
+  opacity: 0.55;
+}
+.schedule-card-left {
+  min-width: 52px;
+}
+.schedule-day {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--black);
+  line-height: 1.2;
+}
+.schedule-date {
+  display: block;
+  font-weight: 400;
+  font-size: 0.75rem;
+  color: var(--grey-400);
+}
+.schedule-card-body {
+  flex: 1;
+  min-width: 0;
+}
+.schedule-session-name {
+  font-weight: 700;
+  font-size: 1rem;
+  margin-bottom: 6px;
+}
+.schedule-session-name--rest {
+  color: var(--grey-400);
+  font-weight: 500;
+}
+.schedule-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.schedule-competition {
+  font-size: 0.75rem;
+  color: var(--grey-400);
+}
+.schedule-arrow {
+  font-size: 1.4rem;
+  color: var(--grey-400);
+  flex-shrink: 0;
+}
+.badge-orange {
+  background: #FF6B00;
+  color: #fff;
+}
+.badge-red {
+  background: var(--red);
+  color: #fff;
+}
+</style>
+
+{% endblock %}

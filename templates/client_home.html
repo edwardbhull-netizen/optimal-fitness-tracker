@@ -23,56 +23,14 @@
     {% endif %}
   </div>
 
-  <a href="/group-sessions" class="btn btn-primary" style="margin-bottom:20px;font-size:1.05rem;padding:18px 20px;border-radius:var(--radius);">
-    Group Sessions
+  <a href="/schedule" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:14px;font-size:1.05rem;padding:20px;border-radius:var(--radius);text-decoration:none;">
+    This Week's Sessions
   </a>
 
-  <div class="section-header">
-    <span class="section-title">Start a personal session</span>
-  </div>
-
-  <div class="day-grid">
-    {% for day in days %}
-    <a href="/client/session/{{ day.lower().replace(' ', '-') }}" class="day-card">
-      <div>
-        <div class="day-card-label">{{ day }}</div>
-        <div class="day-card-name">
-          {% if 'A' in day %}Lower Body{% elif 'B' in day %}Upper Body{% elif 'C' in day %}Full Body{% else %}Training{% endif %}
-        </div>
-        <div class="day-card-count">Tap to start</div>
-      </div>
-      <span class="day-card-arrow">›</span>
-    </a>
-    {% else %}
-    <div class="card">
-      <p class="text-muted">No programme loaded. Ask your coach to set up your programme.</p>
-    </div>
-    {% endfor %}
-  </div>
-
-  <div class="section-header mt-16">
-    <span class="section-title">Recent activity</span>
-    <a href="/client/history" class="btn btn-ghost btn-sm">View all</a>
-  </div>
-
-  {% if last_session %}
-  <a href="/client/history" class="card" style="text-decoration:none;color:var(--black);display:block;">
-    <div class="card-header">
-      <div>
-        <div class="card-title">{{ last_session.date }}</div>
-        <div class="card-subtitle">{{ last_session.programme_day or 'Open session' }}</div>
-      </div>
-      <span class="badge {% if last_session.completed_at %}badge-green{% else %}badge-grey{% endif %}">
-        {% if last_session.completed_at %}Done{% else %}In progress{% endif %}
-      </span>
-    </div>
+  <a href="/client/history" class="btn btn-ghost" style="display:block;text-align:center;font-size:1rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
+    My History
   </a>
-  {% else %}
-  <div class="empty-state">
-    <div class="empty-state-icon">🏋️</div>
-    <p>No sessions yet. Pick a day above and get going.</p>
-  </div>
-  {% endif %}
+
 </div>
 
 {% endblock %}
