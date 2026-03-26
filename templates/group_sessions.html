@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Group Sessions — Optimal Fitness{% endblock %}
+{% block content %}
+
+<style>
+  .session-type-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 0 10px;
+  }
+
+  .session-type-pill {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pill-burn   { background: #fff3e0; color: #e65100; }
+  .pill-strong { background: #fee2e2; color: #b91c1c; }
+  .pill-hybrid { background: #d1fae5; color: #065f46; }
+
+  .session-type-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--grey-400);
+  }
+
+  .group-session-card {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    text-decoration: none;
+    color: var(--black);
+    transition: border-color 0.15s;
+    cursor: pointer;
+  }
+
+  .group-session-card:active { background: var(--grey-50); }
+
+  .group-session-card.burn-card:hover,
+  .group-session-card.burn-card:active { border-color: #e65100; }
+
+  .group-session-card.strong-card:hover,
+  .group-session-card.strong-card:active { border-color: var(--red); }
+
+  .group-session-card.hybrid-card:hover,
+  .group-session-card.hybrid-card:active { border-color: #059669; }
+
+  .group-session-name {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 3px;
+  }
+
+  .group-session-metric {
+    font-size: 0.8rem;
+    color: var(--grey-400);
+  }
+
+  .group-session-arrow {
+    font-size: 1.2rem;
+    color: var(--grey-400);
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  .type-section { margin-bottom: 8px; }
+</style>
+
+<div class="topbar">
+  <a href="/client/home" class="back-btn">‹</a>
+  <span class="topbar-title">Group Sessions</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  {% for session_type, session_list in sessions.items() %}
+  <div class="type-section">
+    <div class="session-type-header">
+      <span class="session-type-pill
+        {% if session_type == 'BURN' %}pill-burn
+        {% elif session_type == 'STRONG' %}pill-strong
+        {% else %}pill-hybrid{% endif %}">
+        {{ session_type }}
+      </span>
+    </div>
+
+    {% for s in session_list %}
+    <a href="/group-session/{{ s.name | urlencode }}"
+       class="group-session-card
+         {% if session_type == 'BURN' %}burn-card
+         {% elif session_type == 'STRONG' %}strong-card
+         {% else %}hybrid-card{% endif %}">
+      <div>
+        <div class="group-session-name">{{ s.name }}</div>
+        <div class="group-session-metric">{{ s.competition }}</div>
+      </div>
+      <span class="group-session-arrow">›</span>
+    </a>
+    {% endfor %}
+  </div>
+  {% endfor %}
+
+</div>
+
+{% endblock %}

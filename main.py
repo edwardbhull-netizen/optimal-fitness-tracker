@@ -19,6 +19,9 @@ BASE_DIR = os.path.dirname(__file__)
 app = FastAPI(title="Optimal Fitness Tracker")
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+templates.env.filters["urlencode"] = lambda s: url_quote(str(s), safe="")
+
+from urllib.parse import quote as url_quote
 
 SECRET_KEY = os.environ.get("SECRET_KEY", "of-solihull-tracker-secret-2026")
 serializer = URLSafeTimedSerializer(SECRET_KEY)
@@ -423,6 +426,91 @@ async def coach_client_view(request: Request, client_id: int):
         "pbs": pbs,
         "is_coach_view": True,
     })
+
+
+@app.get("/group-sessions", response_class=HTMLResponse)
+async def group_sessions_page(request: Request):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+    import json
+    sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
+    with open(sessions_path) as f:
+        sessions_data = json.load(f)
+    return templates.TemplateResponse(request, "group_sessions.html", {
+        "client": session,
+        "sessions": sessions_data
+    })
+
+
+@app.get("/group-session/{session_name}", response_class=HTMLResponse)
+async def group_session_detail(request: Request, session_name: str):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+    import json
+    from urllib.parse import unquote
+    session_name = unquote(session_name)
+    sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
+    with open(sessions_path) as f:
+        sessions_data = json.load(f)
+    # Find the session
+    found = None
+    session_type = None
+    for stype, slist in sessions_data.items():
+        for s in slist:
+            if s["name"] == session_name:
+                found = s
+                session_type = stype
+                break
+    if not found:
+        return RedirectResponse("/group-sessions", status_code=302)
+
+    client_id = session["client_id"]
+    history = db.get_group_session_history(client_id, session_name)
+    pb = db.get_group_session_pb(client_id, session_name, found["unit"])
+
+    return templates.TemplateResponse(request, "group_session_detail.html", {
+        "client": session,
+        "session_info": found,
+        "session_type": session_type,
+        "history": history,
+        "pb": pb
+    })
+
+
+@app.post("/group-session/{session_name}/log")
+async def log_group_session(
+    request: Request,
+    session_name: str,
+    result: float = Form(...),
+    notes: str = Form(default="")
+):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+    from urllib.parse import unquote
+    import json
+    session_name = unquote(session_name)
+    sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
+    with open(sessions_path) as f:
+        sessions_data = json.load(f)
+    found = None
+    session_type = None
+    for stype, slist in sessions_data.items():
+        for s in slist:
+            if s["name"] == session_name:
+                found = s
+                session_type = stype
+                break
+    if not found:
+        return JSONResponse({"error": "Session not found"}, status_code=404)
+
+    client_id = session["client_id"]
+    db.log_group_session(client_id, session_name, session_type,
+                         found["competition"], result, found["unit"], notes)
+    from urllib.parse import quote
+    return RedirectResponse(f"/group-session/{quote(session_name)}", status_code=302)
 
 
 @app.post("/coach/add-client")

@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+{% block title %}{{ session_info.name }} — Optimal Fitness{% endblock %}
+{% block content %}
+
+<style>
+  .type-pill {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .pill-burn   { background: #fff3e0; color: #e65100; }
+  .pill-strong { background: #fee2e2; color: #b91c1c; }
+  .pill-hybrid { background: #d1fae5; color: #065f46; }
+
+  .session-hero {
+    padding: 20px 0 16px;
+  }
+
+  .session-hero-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 8px 0 6px;
+    line-height: 1.1;
+  }
+
+  .competition-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--grey-400);
+    margin-bottom: 4px;
+  }
+
+  .competition-desc {
+    font-size: 0.95rem;
+    color: var(--grey-600);
+    line-height: 1.4;
+  }
+
+  /* PB card */
+  .pb-card {
+    background: #fef3c7;
+    border: 1.5px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .pb-icon {
+    font-size: 1.8rem;
+    flex-shrink: 0;
+  }
+
+  .pb-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #92400e;
+    margin-bottom: 2px;
+  }
+
+  .pb-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #78350f;
+    line-height: 1;
+  }
+
+  .pb-unit {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #92400e;
+  }
+
+  .pb-date {
+    font-size: 0.75rem;
+    color: #a16207;
+    margin-top: 2px;
+  }
+
+  /* Last session card */
+  .last-result-card {
+    background: var(--grey-50);
+    border: 1px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .last-result-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--grey-400);
+    margin-bottom: 2px;
+  }
+
+  .last-result-value {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--black);
+  }
+
+  .last-result-date {
+    font-size: 0.75rem;
+    color: var(--grey-400);
+    margin-top: 1px;
+  }
+
+  /* Log form */
+  .log-form-card {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    margin-bottom: 20px;
+  }
+
+  .log-form-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .log-form-subtitle {
+    font-size: 0.85rem;
+    color: var(--grey-400);
+    margin-bottom: 16px;
+  }
+
+  .result-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 14px;
+  }
+
+  .result-input {
+    flex: 1;
+    padding: 14px 14px;
+    border: 1.5px solid var(--grey-200);
+    border-right: none;
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--black);
+    background: var(--white);
+    -webkit-appearance: none;
+    appearance: none;
+    -moz-appearance: textfield;
+  }
+
+  .result-input::-webkit-outer-spin-button,
+  .result-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
+
+  .result-input:focus {
+    outline: none;
+    border-color: var(--red);
+  }
+
+  .result-unit-badge {
+    padding: 14px 16px;
+    background: var(--grey-100);
+    border: 1.5px solid var(--grey-200);
+    border-left: none;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--grey-600);
+    white-space: nowrap;
+  }
+
+  /* History table */
+  .history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .history-table th {
+    text-align: left;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--grey-400);
+    padding: 8px 0;
+    border-bottom: 1px solid var(--grey-200);
+  }
+
+  .history-table td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grey-100);
+    color: var(--black);
+  }
+
+  .history-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .history-table .result-cell {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .history-table .pb-row td {
+    background: #fffbeb;
+  }
+
+  .history-note {
+    font-size: 0.75rem;
+    color: var(--grey-400);
+    margin-top: 2px;
+  }
+</style>
+
+<div class="topbar">
+  <a href="/group-sessions" class="back-btn">‹</a>
+  <span class="topbar-title">{{ session_info.name }}</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  <div class="session-hero">
+    <span class="type-pill
+      {% if session_type == 'BURN' %}pill-burn
+      {% elif session_type == 'STRONG' %}pill-strong
+      {% else %}pill-hybrid{% endif %}">
+      {{ session_type }}
+    </span>
+    <div class="session-hero-title">{{ session_info.name }}</div>
+    <div class="competition-label">What you're tracking</div>
+    <div class="competition-desc">{{ session_info.competition }}</div>
+  </div>
+
+  {% if pb.pb_value is not none %}
+  <div class="pb-card">
+    <div class="pb-icon">🏆</div>
+    <div>
+      <div class="pb-label">Personal Best</div>
+      <div>
+        <span class="pb-value">{{ pb.pb_value }}</span>
+        <span class="pb-unit">{{ session_info.unit }}</span>
+      </div>
+      {% if pb.pb_date %}
+      <div class="pb-date">Set {{ pb.pb_date }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if history %}
+  <div class="last-result-card">
+    <div>
+      <div class="last-result-label">Last time</div>
+      <div>
+        <span class="last-result-value">
+          {% if history[0].calories is not none %}{{ history[0].calories }}
+          {% elif history[0].weight_kg is not none %}{{ history[0].weight_kg }}
+          {% elif history[0].reps is not none %}{{ history[0].reps }}
+          {% elif history[0].duration_seconds is not none %}{{ history[0].duration_seconds }}
+          {% else %}—{% endif %}
+        </span>
+        <span style="font-size:0.85rem;color:var(--grey-600);margin-left:4px;">{{ session_info.unit }}</span>
+      </div>
+      <div class="last-result-date">{{ history[0].date }}</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="log-form-card">
+    <div class="log-form-title">Log today's result</div>
+    <div class="log-form-subtitle">{{ session_info.metric }} — {{ session_info.competition }}</div>
+    <form method="POST" action="/group-session/{{ session_info.name | urlencode }}/log">
+      <div class="result-input-wrap">
+        <input
+          type="number"
+          name="result"
+          class="result-input"
+          placeholder="0"
+          step="{% if session_info.unit == 'kg' %}0.5{% else %}1{% endif %}"
+          min="0"
+          required
+          inputmode="decimal"
+          autofocus
+        >
+        <div class="result-unit-badge">{{ session_info.unit }}</div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>Notes (optional)</label>
+        <input type="text" name="notes" placeholder="e.g. felt strong, different machine..." maxlength="200">
+      </div>
+      <button type="submit" class="btn btn-primary">Log Result</button>
+    </form>
+  </div>
+
+  {% if history %}
+  <div class="section-header">
+    <span class="section-title">History</span>
+  </div>
+
+  <div class="card" style="padding:0 16px;">
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Result</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in history %}
+        {% set result_val = entry.calories if entry.calories is not none
+                       else (entry.weight_kg if entry.weight_kg is not none
+                       else (entry.reps if entry.reps is not none
+                       else entry.duration_seconds)) %}
+        <tr {% if pb.pb_value is not none and result_val == pb.pb_value %}class="pb-row"{% endif %}>
+          <td>
+            {{ entry.date }}
+            {% if pb.pb_value is not none and result_val == pb.pb_value %}
+            <span class="pb-tag">PB</span>
+            {% endif %}
+          </td>
+          <td class="result-cell">
+            {{ result_val if result_val is not none else '—' }}
+            <span style="font-size:0.75rem;color:var(--grey-400);font-weight:400;">{{ session_info.unit }}</span>
+          </td>
+          <td>
+            {% if entry.session_notes %}
+            <div class="history-note">{{ entry.session_notes }}</div>
+            {% else %}
+            <span style="color:var(--grey-200);">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">📊</div>
+    <p>No results yet. Log your first one above.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+{% endblock %}

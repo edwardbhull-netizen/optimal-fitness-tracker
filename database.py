@@ -313,3 +313,73 @@ def delete_log(log_id: int):
     conn.execute("DELETE FROM exercise_logs WHERE id = ?", (log_id,))
     conn.commit()
     conn.close()
+
+
+def log_group_session(client_id: int, session_name: str, session_type: str,
+                      competition_metric: str, result_value: float, unit: str, notes: str = ""):
+    conn = get_db()
+    c = conn.cursor()
+    today = datetime.now().strftime("%Y-%m-%d")
+    # Create a session record
+    c.execute(
+        "INSERT INTO sessions (client_id, date, programme_day, notes) VALUES (?, ?, ?, ?)",
+        (client_id, today, session_name, notes)
+    )
+    session_id = c.lastrowid
+    # Log the competition result as an exercise log
+    c.execute(
+        """INSERT INTO exercise_logs (session_id, exercise_name, label, set_number,
+           reps, weight_kg, duration_seconds, calories, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (session_id, competition_metric, "COMPETITION", 1,
+         int(result_value) if unit == "reps" else None,
+         result_value if unit == "kg" else None,
+         int(result_value) if unit == "seconds" else None,
+         int(result_value) if unit == "cals" else None,
+         f"Unit: {unit} | Session: {session_name}" + (f" | {notes}" if notes else ""))
+    )
+    conn.commit()
+    conn.close()
+    return session_id
+
+
+def get_group_session_history(client_id: int, session_name: str, limit: int = 10):
+    """Get previous results for a specific group session."""
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT s.date, el.exercise_name, el.reps, el.weight_kg,
+                  el.duration_seconds, el.calories, el.notes, s.notes as session_notes
+           FROM sessions s
+           JOIN exercise_logs el ON el.session_id = s.id
+           WHERE s.client_id = ? AND s.programme_day = ? AND el.label = 'COMPETITION'
+           ORDER BY s.date DESC
+           LIMIT ?""",
+        (client_id, session_name, limit)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_group_session_pb(client_id: int, session_name: str, unit: str):
+    """Get personal best for a group session competition metric."""
+    conn = get_db()
+    if unit == "cals":
+        field = "el.calories"
+    elif unit == "kg":
+        field = "el.weight_kg"
+    elif unit == "reps":
+        field = "el.reps"
+    elif unit == "seconds":
+        field = "el.duration_seconds"
+    else:
+        field = "el.calories"
+
+    row = conn.execute(
+        f"""SELECT MAX({field}) as pb_value, s.date as pb_date
+            FROM sessions s
+            JOIN exercise_logs el ON el.session_id = s.id
+            WHERE s.client_id = ? AND s.programme_day = ? AND el.label = 'COMPETITION'""",
+        (client_id, session_name)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else {"pb_value": None, "pb_date": None}

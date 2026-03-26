@@ -1,0 +1,32 @@
+{
+  "BURN": [
+    {"name": "9-9-9", "competition": "Best 45-sec ski erg effort", "metric": "Cals", "unit": "cals"},
+    {"name": "The Incinerator", "competition": "Max cals on ski erg (cumulative across 3 laps)", "metric": "Cals", "unit": "cals"},
+    {"name": "Death Ride", "competition": "Assault bike — total cals across all 8 rounds", "metric": "Cals", "unit": "cals"},
+    {"name": "The Ladder", "competition": "Speed step-ups — max reps in Round 5", "metric": "Reps", "unit": "reps"},
+    {"name": "Pair & Burn", "competition": "Assault bike — best 30 sec across 3 laps", "metric": "Cals", "unit": "cals"},
+    {"name": "Red Line", "competition": "4-min max cals (Row / Ski / Bike rotates)", "metric": "Cals", "unit": "cals"}
+  ],
+  "STRONG": [
+    {"name": "The Builder", "competition": "KB deadlift — 5-rep max weight", "metric": "Weight", "unit": "kg"},
+    {"name": "Heavy Metal", "competition": "KB deadlift — max reps in 45 sec", "metric": "Reps", "unit": "reps"},
+    {"name": "Slow Burn", "competition": "Goblet squat — max quality reps in 45 sec at 3-1-3 tempo", "metric": "Reps", "unit": "reps"},
+    {"name": "Power Pairs", "competition": "Farmer's carry — max distance in 40 sec", "metric": "Distance", "unit": "metres"},
+    {"name": "The Foundation", "competition": "Plank — max hold time", "metric": "Time", "unit": "seconds"},
+    {"name": "Block & Sled", "competition": "Heaviest sled load sustained non-stop for 4 minutes", "metric": "Weight", "unit": "kg"}
+  ],
+  "HYBRID": [
+    {"name": "Triple Hit", "competition": "Highest individual machine cals in any single 4-min block", "metric": "Cals", "unit": "cals"},
+    {"name": "Pairs & Cals", "competition": "Highest combined team machine cals across all 3 stations", "metric": "Cals", "unit": "cals"},
+    {"name": "HELD-01", "competition": "Cumulative machine cals across all rounds (ski + bike + row)", "metric": "Cals", "unit": "cals"},
+    {"name": "The Chipper", "competition": "Fastest team to clear the full rep list", "metric": "Time", "unit": "seconds"},
+    {"name": "The Countdown", "competition": "Individual total cals / reps across all laps", "metric": "Cals", "unit": "cals"},
+    {"name": "The Switch", "competition": "Individual total cals from both machine circuits", "metric": "Cals", "unit": "cals"},
+    {"name": "The Accumulator", "competition": "Highest individual machine cals in any single round", "metric": "Cals", "unit": "cals"},
+    {"name": "Halo", "competition": "DB bent-over row — max reps per lap, total across both laps", "metric": "Reps", "unit": "reps"},
+    {"name": "Functional Beast", "competition": "Assault bike — combined cals across both rounds", "metric": "Cals", "unit": "cals"},
+    {"name": "Circuit Breaker", "competition": "KB swing — total reps across all 6 rounds", "metric": "Reps", "unit": "reps"},
+    {"name": "The Machine", "competition": "Sled — total distance across both laps", "metric": "Distance", "unit": "metres"},
+    {"name": "Block & Burn", "competition": "Highest individual machine cals in any single 4-min block", "metric": "Cals", "unit": "cals"}
+  ]
+}
