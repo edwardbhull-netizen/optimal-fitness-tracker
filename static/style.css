@@ -48,8 +48,7 @@ p  { line-height: 1.5; color: var(--grey-600); }
   position: sticky;
   top: 0;
   z-index: 100;
-  background: var(--white);
-  border-bottom: 1px solid var(--grey-200);
+  background: var(--black);
   padding: 12px 16px;
   display: flex;
   align-items: center;
@@ -61,6 +60,7 @@ p  { line-height: 1.5; color: var(--grey-600); }
   font-size: 1rem;
   font-weight: 700;
   text-align: center;
+  color: var(--white);
 }
 
 .back-btn {
@@ -70,11 +70,11 @@ p  { line-height: 1.5; color: var(--grey-600); }
   width: 36px;
   height: 36px;
   border: none;
-  background: var(--grey-100);
+  background: rgba(255,255,255,0.1);
   border-radius: 50%;
   cursor: pointer;
   font-size: 1.1rem;
-  color: var(--black);
+  color: var(--white);
   text-decoration: none;
   flex-shrink: 0;
 }
@@ -98,7 +98,7 @@ p  { line-height: 1.5; color: var(--grey-600); }
   justify-content: center;
   min-height: 100vh;
   padding: 24px 24px 48px;
-  background: var(--white);
+  background: var(--black);
 }
 
 .login-logo {
@@ -111,7 +111,7 @@ p  { line-height: 1.5; color: var(--grey-600); }
 .login-brand {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--grey-600);
+  color: rgba(255,255,255,0.5);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   margin-bottom: 32px;
@@ -306,6 +306,24 @@ p  { line-height: 1.5; color: var(--grey-600); }
 .badge-green { background: #d1fae5; color: #065f46; }
 .badge-grey { background: var(--grey-100); color: var(--grey-600); }
 .badge-day { background: var(--black); color: var(--white); }
+.badge-burn { background: #FF6B00; color: var(--white); }
+.badge-strong { background: var(--red); color: var(--white); }
+.badge-hybrid { background: #2D9B5A; color: var(--white); }
+
+/* ── Session type headers ─────────────────────────────────────────────────── */
+.session-type-header {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin: 20px 0 10px;
+  color: var(--white);
+}
+.session-type-header.burn   { background: #FF6B00; }
+.session-type-header.strong { background: var(--red); }
+.session-type-header.hybrid { background: #2D9B5A; }
 
 /* ── Alert / Error ────────────────────────────────────────────────────────── */
 .alert {
