@@ -59,10 +59,24 @@ def init_db():
         );
     """)
 
-    # Seed a default coach if none exists
-    existing = c.execute("SELECT id FROM coaches LIMIT 1").fetchone()
-    if not existing:
-        c.execute("INSERT INTO coaches (name, pin) VALUES (?, ?)", ("Ed", "1234"))
+    # Seed coaches if not already present
+    default_coaches = [
+        ("Ed Hull", "1234"),
+        ("Dan Truepenny", "1234"),
+        ("Vicky Ratcliffe", "1234"),
+        ("Sarah", "1234"),
+        ("Jody", "1234"),
+    ]
+    for name, pin in default_coaches:
+        exists = c.execute("SELECT id FROM coaches WHERE LOWER(name) = LOWER(?)", (name,)).fetchone()
+        if not exists:
+            c.execute("INSERT INTO coaches (name, pin) VALUES (?, ?)", (name, pin))
+
+    # Seed Ed as a test client if not already present
+    test_client = c.execute("SELECT id FROM clients WHERE LOWER(name) = 'ed hull'").fetchone()
+    if not test_client:
+        c.execute("INSERT INTO clients (name, pin, programme_path) VALUES (?, ?, ?)",
+                  ("Ed Hull", "1234", None))
 
     conn.commit()
     conn.close()
