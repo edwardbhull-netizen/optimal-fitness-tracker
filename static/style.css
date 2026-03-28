@@ -2,20 +2,20 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --red: #E63232;
-  --black: #0d0d0d;       /* darkest — topbar, login bg */
-  --white: #1c1c1e;       /* surface — cards, modals, inputs */
-  --grey-50: #242426;     /* subtle surface */
-  --grey-100: #2c2c2e;    /* borders, dividers */
-  --grey-200: #3a3a3c;    /* visible borders */
+  --red: #44AC48;         /* Optimal brand green — primary accent */
+  --black: #000000;       /* logo black — topbar, login bg, body */
+  --white: #141416;       /* surface — cards, modals, inputs */
+  --grey-50: #1c1c1e;     /* subtle surface */
+  --grey-100: #252527;    /* borders, dividers */
+  --grey-200: #38383a;    /* visible borders */
   --grey-400: #8e8e93;    /* muted text */
   --grey-600: #c7c7cc;    /* secondary text */
-  --text: #f2f2f7;        /* primary text */
-  --green: #30d158;
+  --text: #f5f5f7;        /* primary text */
+  --green: #44AC48;       /* brand green */
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.50);
-  --shadow-lg: 0 4px 20px rgba(0,0,0,0.70);
+  --shadow: 0 2px 8px rgba(0,0,0,0.60);
+  --shadow-lg: 0 4px 20px rgba(0,0,0,0.80);
 }
 
 html {
@@ -29,7 +29,7 @@ html {
 body {
   min-height: 100vh;
   padding-bottom: env(safe-area-inset-bottom, 20px);
-  background: #111113;
+  background: #000000;
 }
 
 /* ── Typography ───────────────────────────────────────────────────────────── */
@@ -312,8 +312,8 @@ p  { line-height: 1.5; color: var(--grey-600); }
 .badge-grey { background: var(--grey-100); color: var(--grey-600); }
 .badge-day { background: var(--grey-200); color: var(--text); }
 .badge-burn { background: #FF6B00; color: #ffffff; }
-.badge-strong { background: var(--red); color: #ffffff; }
-.badge-hybrid { background: #1a7a40; color: #ffffff; }
+.badge-strong { background: #44AC48; color: #000000; }
+.badge-hybrid { background: #2D9B5A; color: #ffffff; }
 
 /* ── Session type headers ─────────────────────────────────────────────────── */
 .session-type-header {
@@ -327,8 +327,8 @@ p  { line-height: 1.5; color: var(--grey-600); }
   color: #ffffff;
 }
 .session-type-header.burn   { background: #FF6B00; }
-.session-type-header.strong { background: var(--red); }
-.session-type-header.hybrid { background: #1a7a40; }
+.session-type-header.strong { background: #44AC48; color: #000000; }
+.session-type-header.hybrid { background: #2D9B5A; }
 
 /* ── Alert / Error ────────────────────────────────────────────────────────── */
 .alert {
