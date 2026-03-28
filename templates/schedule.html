@@ -25,9 +25,9 @@
       <div class="schedule-session-name">{{ item.session_name }}</div>
       <div class="schedule-meta">
         <span class="badge
-          {% if item.session_type == 'BURN' %}badge-orange
-          {% elif item.session_type == 'STRONG' %}badge-red
-          {% elif item.session_type == 'HYBRID' %}badge-green
+          {% if item.session_type == 'BURN' %}badge-burn
+          {% elif item.session_type == 'STRONG' %}badge-strong
+          {% elif item.session_type == 'HYBRID' %}badge-hybrid
           {% else %}badge-grey{% endif %}">
           {{ item.session_type }}
         </span>
@@ -61,19 +61,19 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  background: var(--card-bg);
+  background: var(--white);
   border-radius: var(--radius);
   padding: 16px;
   margin-bottom: 10px;
   text-decoration: none;
-  color: var(--black);
+  color: var(--text);
   border-left: 4px solid transparent;
 }
 .schedule-card--today {
   border-left: 4px solid var(--red);
 }
 .schedule-card--rest {
-  opacity: 0.55;
+  opacity: 0.45;
 }
 .schedule-card-left {
   min-width: 52px;
@@ -81,7 +81,7 @@
 .schedule-day {
   font-weight: 700;
   font-size: 0.85rem;
-  color: var(--black);
+  color: var(--text);
   line-height: 1.2;
 }
 .schedule-date {
@@ -97,6 +97,7 @@
 .schedule-session-name {
   font-weight: 700;
   font-size: 1rem;
+  color: var(--text);
   margin-bottom: 6px;
 }
 .schedule-session-name--rest {
@@ -117,14 +118,6 @@
   font-size: 1.4rem;
   color: var(--grey-400);
   flex-shrink: 0;
-}
-.badge-orange {
-  background: #FF6B00;
-  color: #fff;
-}
-.badge-red {
-  background: var(--red);
-  color: #fff;
 }
 </style>
 
