@@ -312,8 +312,8 @@ p  { line-height: 1.5; color: var(--grey-600); }
 .badge-grey { background: var(--grey-100); color: var(--grey-600); }
 .badge-day { background: var(--grey-200); color: var(--text); }
 .badge-burn { background: #FF6B00; color: #ffffff; }
-.badge-strong { background: #44AC48; color: #000000; }
-.badge-hybrid { background: #2D9B5A; color: #ffffff; }
+.badge-strong { background: #2979FF; color: #ffffff; }
+.badge-hybrid { background: #00C853; color: #000000; }
 
 /* ── Session type headers ─────────────────────────────────────────────────── */
 .session-type-header {
@@ -327,8 +327,8 @@ p  { line-height: 1.5; color: var(--grey-600); }
   color: #ffffff;
 }
 .session-type-header.burn   { background: #FF6B00; }
-.session-type-header.strong { background: #44AC48; color: #000000; }
-.session-type-header.hybrid { background: #2D9B5A; }
+.session-type-header.strong { background: #2979FF; }
+.session-type-header.hybrid { background: #00C853; color: #000000; }
 
 /* ── Alert / Error ────────────────────────────────────────────────────────── */
 .alert {
