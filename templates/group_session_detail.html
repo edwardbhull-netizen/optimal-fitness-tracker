@@ -45,8 +45,8 @@
 
   /* PB card */
   .pb-card {
-    background: #fef3c7;
-    border: 1.5px solid #fcd34d;
+    background: rgba(251,191,36,0.1);
+    border: 1.5px solid rgba(251,191,36,0.3);
     border-radius: var(--radius);
     padding: 16px;
     margin-bottom: 12px;
@@ -65,26 +65,27 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #92400e;
+    color: #fbbf24;
     margin-bottom: 2px;
   }
 
   .pb-value {
     font-size: 1.6rem;
     font-weight: 800;
-    color: #78350f;
+    color: #fde68a;
     line-height: 1;
   }
 
   .pb-unit {
     font-size: 0.9rem;
     font-weight: 600;
-    color: #92400e;
+    color: #fbbf24;
   }
 
   .pb-date {
     font-size: 0.75rem;
-    color: #a16207;
+    color: #fbbf24;
+    opacity: 0.7;
     margin-top: 2px;
   }
 
@@ -112,7 +113,7 @@
   .last-result-value {
     font-size: 1.3rem;
     font-weight: 800;
-    color: var(--black);
+    color: var(--text);
   }
 
   .last-result-date {
@@ -221,7 +222,7 @@
   }
 
   .history-table .pb-row td {
-    background: #fffbeb;
+    background: rgba(251,191,36,0.08);
   }
 
   .history-note {
@@ -320,11 +321,11 @@
               min="0"
               max="2000"
               inputmode="numeric"
-              style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:1rem;font-family:inherit;background:var(--white);box-sizing:border-box;"
+              style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:1rem;font-family:inherit;background:var(--grey-50);color:var(--text);box-sizing:border-box;"
             >
           </div>
           <div style="flex:1;">
-            <select name="device_source" style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;background:var(--white);box-sizing:border-box;-webkit-appearance:none;appearance:none;">
+            <select name="device_source" style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;background:var(--grey-50);color:var(--text);box-sizing:border-box;-webkit-appearance:none;appearance:none;">
               <option value="Apple Watch">Apple Watch</option>
               <option value="Garmin">Garmin</option>
               <option value="Samsung">Samsung</option>

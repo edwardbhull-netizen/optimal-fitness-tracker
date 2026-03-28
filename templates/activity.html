@@ -55,8 +55,8 @@
     font-size: 1.4rem;
     font-weight: 700;
     font-family: inherit;
-    color: var(--black);
-    background: var(--white);
+    color: var(--text);
+    background: var(--grey-50);
     -webkit-appearance: none;
     -moz-appearance: textfield;
     box-sizing: border-box;
@@ -78,8 +78,8 @@
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     font-family: inherit;
-    color: var(--black);
-    background: var(--white);
+    color: var(--text);
+    background: var(--grey-50);
     -webkit-appearance: none;
     appearance: none;
     width: 100%;
@@ -92,8 +92,8 @@
   }
 
   .today-logged {
-    background: #d1fae5;
-    border: 1.5px solid #6ee7b7;
+    background: rgba(48,209,88,0.1);
+    border: 1.5px solid rgba(48,209,88,0.3);
     border-radius: var(--radius-sm);
     padding: 12px 14px;
     margin-bottom: 14px;
@@ -105,20 +105,21 @@
   .today-logged-val {
     font-size: 1.4rem;
     font-weight: 800;
-    color: #065f46;
+    color: #30d158;
   }
 
   .today-logged-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #065f46;
+    color: #30d158;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
 
   .today-logged-source {
     font-size: 0.8rem;
-    color: #047857;
+    color: #30d158;
+    opacity: 0.7;
   }
 
   /* Chart card */
@@ -199,8 +200,8 @@
   }
 
   .pb-banner {
-    background: #fef3c7;
-    border: 1.5px solid #fcd34d;
+    background: rgba(251,191,36,0.1);
+    border: 1.5px solid rgba(251,191,36,0.3);
     border-radius: var(--radius);
     padding: 14px 16px;
     display: flex;
@@ -216,19 +217,20 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #92400e;
+    color: #fbbf24;
     margin-bottom: 2px;
   }
 
   .pb-banner-val {
     font-size: 1.4rem;
     font-weight: 800;
-    color: #78350f;
+    color: #fde68a;
   }
 
   .pb-banner-date {
     font-size: 0.75rem;
-    color: #a16207;
+    color: #fbbf24;
+    opacity: 0.7;
     margin-top: 1px;
   }
 </style>
@@ -273,6 +275,7 @@
             max="100000"
             inputmode="numeric"
             class="steps-big-input"
+            style="background:var(--grey-50);color:var(--text);border-color:var(--grey-200);"
           >
         </div>
         <div class="steps-input-wrap" style="max-width:140px;">
