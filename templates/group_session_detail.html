@@ -308,6 +308,33 @@
         <label>Notes (optional)</label>
         <input type="text" name="notes" placeholder="e.g. felt strong, different machine..." maxlength="200">
       </div>
+
+      <div style="border-top:1px solid var(--grey-100);padding-top:14px;margin-bottom:16px;">
+        <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);margin-bottom:10px;">Device calories (optional)</div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;">
+            <input
+              type="number"
+              name="device_calories"
+              placeholder="e.g. 420"
+              min="0"
+              max="2000"
+              inputmode="numeric"
+              style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:1rem;font-family:inherit;background:var(--white);box-sizing:border-box;"
+            >
+          </div>
+          <div style="flex:1;">
+            <select name="device_source" style="width:100%;padding:12px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;background:var(--white);box-sizing:border-box;-webkit-appearance:none;appearance:none;">
+              <option value="Apple Watch">Apple Watch</option>
+              <option value="Garmin">Garmin</option>
+              <option value="Samsung">Samsung</option>
+              <option value="iPhone">iPhone</option>
+              <option value="Manual">Manual</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
       <button type="submit" class="btn btn-primary">Log Result</button>
     </form>
   </div>

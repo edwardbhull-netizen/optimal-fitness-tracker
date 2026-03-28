@@ -84,6 +84,28 @@
 
 <!-- Finish session bar -->
 <div class="finish-bar {% if not active_session %}hidden{% endif %}" id="finish-bar">
+  <div id="finish-calories-row" style="display:none;padding:10px 0 8px;border-top:1px solid var(--grey-100);">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);margin-bottom:8px;">Device calories burned (optional)</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <input
+        type="number"
+        id="finish-cals-input"
+        placeholder="e.g. 420 kcal"
+        min="0"
+        max="2000"
+        inputmode="numeric"
+        style="flex:1;padding:10px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:1rem;font-family:inherit;background:var(--white);"
+      >
+      <select id="finish-cals-source" style="flex:1;padding:10px;border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.85rem;font-family:inherit;background:var(--white);-webkit-appearance:none;appearance:none;">
+        <option value="Apple Watch">Apple Watch</option>
+        <option value="Garmin">Garmin</option>
+        <option value="Samsung">Samsung</option>
+        <option value="iPhone">iPhone</option>
+        <option value="Manual">Manual</option>
+      </select>
+    </div>
+    <button id="finish-confirm-btn" class="btn btn-primary" style="width:100%;">Confirm &amp; Finish</button>
+  </div>
   <button id="finish-session-btn" class="btn btn-primary">Finish Session</button>
 </div>
 

@@ -347,13 +347,40 @@ async function deleteLog(logId, exerciseName) {
 
 async function finishSession() {
   if (!activeSessionId) return;
-  const btn = document.getElementById('finish-session-btn');
-  btn.disabled = true;
-  btn.textContent = 'Finishing...';
+
+  // First tap — show the calories row
+  const calsRow = document.getElementById('finish-calories-row');
+  const finishBtn = document.getElementById('finish-session-btn');
+  if (calsRow && calsRow.style.display === 'none') {
+    calsRow.style.display = 'block';
+    finishBtn.style.display = 'none';
+
+    // Wire up confirm button
+    const confirmBtn = document.getElementById('finish-confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', () => doFinishSession());
+    }
+    return;
+  }
+  doFinishSession();
+}
+
+async function doFinishSession() {
+  const confirmBtn = document.getElementById('finish-confirm-btn');
+  if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.textContent = 'Finishing...'; }
+
+  const calsInput = document.getElementById('finish-cals-input');
+  const sourceSelect = document.getElementById('finish-cals-source');
+  const deviceCals = calsInput ? calsInput.value : '';
+  const deviceSource = sourceSelect ? sourceSelect.value : 'Manual';
 
   try {
     const form = new FormData();
     form.append('notes', '');
+    if (deviceCals) {
+      form.append('device_calories', deviceCals);
+      form.append('device_source', deviceSource);
+    }
     await fetch(`/client/session/${activeSessionId}/complete`, { method: 'POST', body: form });
     const dayKey = document.getElementById('programme-day').value;
     sessionStorage.removeItem('session_id_' + dayKey);
@@ -361,8 +388,7 @@ async function finishSession() {
     setTimeout(() => window.location.href = '/client/history', 1600);
   } catch (e) {
     showToast('Error finishing session');
-    btn.disabled = false;
-    btn.textContent = 'Finish Session';
+    if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Finish'; }
   }
 }
 

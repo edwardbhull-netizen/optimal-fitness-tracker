@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+{% block title %}Activity — Optimal Fitness{% endblock %}
+{% block content %}
+
+<style>
+  .activity-section {
+    margin-bottom: 28px;
+  }
+
+  .steps-entry-card {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+  }
+
+  .steps-entry-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .steps-entry-sub {
+    font-size: 0.82rem;
+    color: var(--grey-400);
+    margin-bottom: 16px;
+  }
+
+  .steps-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+    align-items: flex-end;
+  }
+
+  .steps-input-wrap {
+    flex: 1;
+  }
+
+  .steps-input-wrap label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--grey-400);
+    display: block;
+    margin-bottom: 6px;
+  }
+
+  .steps-big-input {
+    width: 100%;
+    padding: 14px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius-sm);
+    font-size: 1.4rem;
+    font-weight: 700;
+    font-family: inherit;
+    color: var(--black);
+    background: var(--white);
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    box-sizing: border-box;
+  }
+
+  .steps-big-input:focus {
+    outline: none;
+    border-color: var(--red);
+  }
+
+  .steps-big-input::-webkit-outer-spin-button,
+  .steps-big-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
+
+  .source-select {
+    padding: 14px 12px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-family: inherit;
+    color: var(--black);
+    background: var(--white);
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .source-select:focus {
+    outline: none;
+    border-color: var(--red);
+  }
+
+  .today-logged {
+    background: #d1fae5;
+    border: 1.5px solid #6ee7b7;
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .today-logged-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #065f46;
+  }
+
+  .today-logged-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #065f46;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .today-logged-source {
+    font-size: 0.8rem;
+    color: #047857;
+  }
+
+  /* Chart card */
+  .chart-card {
+    background: var(--white);
+    border: 1.5px solid var(--grey-200);
+    border-radius: var(--radius);
+    padding: 16px;
+  }
+
+  .chart-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+
+  .chart-tab {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1.5px solid var(--grey-200);
+    border-radius: 20px;
+    background: var(--white);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--grey-400);
+    cursor: pointer;
+    font-family: inherit;
+    text-align: center;
+    transition: all 0.15s;
+  }
+
+  .chart-tab.active {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+  }
+
+  .chart-container {
+    position: relative;
+    height: 180px;
+  }
+
+  /* Calories history */
+  .cal-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--grey-100);
+  }
+
+  .cal-row:last-child {
+    border-bottom: none;
+  }
+
+  .cal-date {
+    font-size: 0.82rem;
+    color: var(--grey-400);
+  }
+
+  .cal-session {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--black);
+  }
+
+  .cal-value {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--red);
+    white-space: nowrap;
+  }
+
+  .cal-source-tag {
+    font-size: 0.7rem;
+    color: var(--grey-400);
+    font-weight: 400;
+  }
+
+  .pb-banner {
+    background: #fef3c7;
+    border: 1.5px solid #fcd34d;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .pb-banner-icon { font-size: 1.6rem; }
+
+  .pb-banner-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #92400e;
+    margin-bottom: 2px;
+  }
+
+  .pb-banner-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #78350f;
+  }
+
+  .pb-banner-date {
+    font-size: 0.75rem;
+    color: #a16207;
+    margin-top: 1px;
+  }
+</style>
+
+<div class="topbar">
+  <a href="/client/home" class="back-btn">‹</a>
+  <span class="topbar-title">Activity</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  <!-- STEPS SECTION -->
+  <div class="section-header" style="margin-top:8px;">
+    <span class="section-title">Daily Steps</span>
+  </div>
+
+  <div class="activity-section">
+    <div class="steps-entry-card">
+      <div class="steps-entry-title">Log today's steps</div>
+      <div class="steps-entry-sub">Enter the steps from your device at end of day.</div>
+
+      {% if today_steps %}
+      <div class="today-logged">
+        <div>
+          <div class="today-logged-label">Today logged</div>
+          <div class="today-logged-val">{{ "{:,}".format(today_steps.steps) }}</div>
+          <div class="today-logged-source">via {{ today_steps.source }}</div>
+        </div>
+        <div style="font-size:0.8rem;color:#047857;">Tap to update ↓</div>
+      </div>
+      {% endif %}
+
+      <div class="steps-input-row">
+        <div class="steps-input-wrap">
+          <label>Steps</label>
+          <input
+            type="number"
+            id="steps-input"
+            placeholder="{{ today_steps.steps if today_steps else '0' }}"
+            min="0"
+            max="100000"
+            inputmode="numeric"
+            class="steps-big-input"
+          >
+        </div>
+        <div class="steps-input-wrap" style="max-width:140px;">
+          <label>Device</label>
+          <select id="steps-source" class="source-select">
+            <option value="Apple Watch">Apple Watch</option>
+            <option value="Garmin">Garmin</option>
+            <option value="Samsung">Samsung</option>
+            <option value="iPhone">iPhone</option>
+            <option value="Manual">Manual</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="logSteps()">Save Steps</button>
+    </div>
+  </div>
+
+  <!-- STEPS CHART -->
+  <div class="activity-section">
+    <div class="chart-card">
+      <div class="chart-tabs">
+        <button class="chart-tab active" data-view="daily" onclick="switchView('daily', this)">Daily</button>
+        <button class="chart-tab" data-view="weekly" onclick="switchView('weekly', this)">Weekly</button>
+        <button class="chart-tab" data-view="monthly" onclick="switchView('monthly', this)">Monthly</button>
+      </div>
+      <div class="chart-container">
+        <canvas id="steps-chart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- SESSION CALORIES SECTION -->
+  <div class="section-header">
+    <span class="section-title">Session Calories</span>
+  </div>
+
+  {% if cal_pb.pb_cals %}
+  <div class="pb-banner">
+    <div class="pb-banner-icon">🔥</div>
+    <div>
+      <div class="pb-banner-label">Best ever session</div>
+      <div class="pb-banner-val">{{ cal_pb.pb_cals }} kcal</div>
+      {% if cal_pb.pb_date %}
+      <div class="pb-banner-date">{{ cal_pb.pb_date }}</div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if cal_history %}
+  <div class="card" style="padding:0 16px;">
+    {% for entry in cal_history %}
+    <div class="cal-row">
+      <div>
+        <div class="cal-session">{{ entry.programme_day or 'Session' }}</div>
+        <div class="cal-date">{{ entry.date }}</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="cal-value">{{ entry.device_calories }} kcal</div>
+        <div class="cal-source-tag">{{ entry.device_source or 'Device' }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">🔥</div>
+    <p>No session calories logged yet.<br>Add them when you finish a session.</p>
+  </div>
+  {% endif %}
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+let stepsChart = null;
+let currentView = 'daily';
+
+async function loadChart(view) {
+  const res = await fetch(`/client/steps/data?view=${view}`);
+  const data = await res.json();
+
+  const ctx = document.getElementById('steps-chart').getContext('2d');
+
+  if (stepsChart) {
+    stepsChart.data.labels = data.labels;
+    stepsChart.data.datasets[0].data = data.values;
+    stepsChart.update();
+    return;
+  }
+
+  stepsChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values,
+        backgroundColor: data.values.map(() => '#E63232'),
+        borderRadius: 4,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y.toLocaleString()} steps`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 10 }, color: '#888', maxRotation: 45 }
+        },
+        y: {
+          grid: { color: '#f0f0f0' },
+          ticks: {
+            font: { size: 10 },
+            color: '#888',
+            callback: v => v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v
+          },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function switchView(view, btn) {
+  currentView = view;
+  document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  loadChart(view);
+}
+
+async function logSteps() {
+  const steps = document.getElementById('steps-input').value;
+  if (!steps || parseInt(steps) <= 0) {
+    showToast('Enter a valid step count');
+    return;
+  }
+  const source = document.getElementById('steps-source').value;
+  const form = new FormData();
+  form.append('steps', steps);
+  form.append('source', source);
+
+  try {
+    const res = await fetch('/client/steps/log', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) {
+      showToast('Steps saved!');
+      setTimeout(() => location.reload(), 1000);
+    }
+  } catch (e) {
+    showToast('Error saving steps');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadChart('daily');
+});
+</script>
+
+{% endblock %}

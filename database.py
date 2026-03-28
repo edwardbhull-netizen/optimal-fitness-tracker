@@ -66,6 +66,17 @@ def init_db():
             session_type TEXT,
             updated_at TEXT DEFAULT (datetime('now'))
         );
+
+        CREATE TABLE IF NOT EXISTS daily_steps (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            steps INTEGER NOT NULL,
+            source TEXT DEFAULT 'Manual',
+            logged_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(client_id, date),
+            FOREIGN KEY (client_id) REFERENCES clients(id)
+        );
     """)
 
     # Seed coaches if not already present
@@ -86,6 +97,13 @@ def init_db():
     if not test_client:
         c.execute("INSERT INTO clients (name, pin, programme_path) VALUES (?, ?, ?)",
                   ("Ed Hull", "1234", None))
+
+    # Migrate: add device_calories and device_source to sessions if not present
+    for col, coltype in [("device_calories", "INTEGER"), ("device_source", "TEXT")]:
+        try:
+            c.execute(f"ALTER TABLE sessions ADD COLUMN {col} {coltype}")
+        except Exception:
+            pass
 
     conn.commit()
     conn.close()
@@ -380,6 +398,139 @@ def add_client(name: str, pin: str, programme_path: str = None):
     conn.commit()
     conn.close()
     return client_id
+
+
+def update_session_device_calories(session_id: int, device_calories: int, device_source: str):
+    conn = get_db()
+    conn.execute(
+        "UPDATE sessions SET device_calories = ?, device_source = ? WHERE id = ?",
+        (device_calories, device_source, session_id)
+    )
+    conn.commit()
+    conn.close()
+
+
+def log_steps(client_id: int, date: str, steps: int, source: str = "Manual"):
+    conn = get_db()
+    conn.execute(
+        """INSERT INTO daily_steps (client_id, date, steps, source)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(client_id, date) DO UPDATE SET steps=excluded.steps, source=excluded.source, logged_at=datetime('now')""",
+        (client_id, date, steps, source)
+    )
+    conn.commit()
+    conn.close()
+
+
+def get_today_steps(client_id: int):
+    from datetime import date
+    today = date.today().strftime("%Y-%m-%d")
+    conn = get_db()
+    row = conn.execute(
+        "SELECT * FROM daily_steps WHERE client_id = ? AND date = ?",
+        (client_id, today)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_steps_daily(client_id: int, days: int = 7):
+    """Last N days of steps, filling gaps with 0."""
+    from datetime import date, timedelta
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT date, steps FROM daily_steps WHERE client_id = ? AND date >= date('now', ?) ORDER BY date ASC",
+        (client_id, f"-{days-1} days")
+    ).fetchall()
+    conn.close()
+    data = {r["date"]: r["steps"] for r in rows}
+    result = []
+    for i in range(days - 1, -1, -1):
+        d = (date.today() - timedelta(days=i)).strftime("%Y-%m-%d")
+        result.append({"date": d, "steps": data.get(d, 0)})
+    return result
+
+
+def get_steps_weekly(client_id: int, weeks: int = 8):
+    """Aggregate steps by week (Mon–Sun) for last N weeks."""
+    from datetime import date, timedelta
+    today = date.today()
+    monday = today - timedelta(days=today.weekday())
+    conn = get_db()
+    result = []
+    for i in range(weeks - 1, -1, -1):
+        week_mon = monday - timedelta(weeks=i)
+        week_sun = week_mon + timedelta(days=6)
+        row = conn.execute(
+            """SELECT COALESCE(SUM(steps), 0) as total
+               FROM daily_steps
+               WHERE client_id = ? AND date >= ? AND date <= ?""",
+            (client_id, week_mon.strftime("%Y-%m-%d"), week_sun.strftime("%Y-%m-%d"))
+        ).fetchone()
+        result.append({
+            "label": week_mon.strftime("%-d %b"),
+            "total": row["total"] if row else 0
+        })
+    conn.close()
+    return result
+
+
+def get_steps_monthly(client_id: int, months: int = 6):
+    """Aggregate steps by calendar month for last N months."""
+    from datetime import date
+    import calendar
+    today = date.today()
+    conn = get_db()
+    result = []
+    for i in range(months - 1, -1, -1):
+        # Calculate year/month going back i months
+        month = today.month - i
+        year = today.year
+        while month <= 0:
+            month += 12
+            year -= 1
+        month_start = f"{year}-{month:02d}-01"
+        last_day = calendar.monthrange(year, month)[1]
+        month_end = f"{year}-{month:02d}-{last_day:02d}"
+        row = conn.execute(
+            """SELECT COALESCE(SUM(steps), 0) as total
+               FROM daily_steps
+               WHERE client_id = ? AND date >= ? AND date <= ?""",
+            (client_id, month_start, month_end)
+        ).fetchone()
+        import calendar as cal
+        result.append({
+            "label": f"{cal.month_abbr[month]} {year}",
+            "total": row["total"] if row else 0
+        })
+    conn.close()
+    return result
+
+
+def get_session_calories_history(client_id: int, limit: int = 10):
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT date, programme_day, device_calories, device_source
+           FROM sessions
+           WHERE client_id = ? AND device_calories IS NOT NULL
+           ORDER BY date DESC, id DESC
+           LIMIT ?""",
+        (client_id, limit)
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_session_calories_pb(client_id: int):
+    conn = get_db()
+    row = conn.execute(
+        """SELECT MAX(device_calories) as pb_cals, date as pb_date
+           FROM sessions
+           WHERE client_id = ? AND device_calories IS NOT NULL""",
+        (client_id,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else {"pb_cals": None, "pb_date": None}
 
 
 def delete_log(log_id: int):

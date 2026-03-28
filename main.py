@@ -272,6 +272,8 @@ async def complete_session(
     request: Request,
     session_id: int,
     notes: str = Form(default=""),
+    device_calories: Optional[int] = Form(default=None),
+    device_source: str = Form(default=""),
 ):
     s = require_client(request)
     if not s:
@@ -282,6 +284,8 @@ async def complete_session(
         return JSONResponse({"error": "Not found"}, status_code=404)
 
     db.complete_session(session_id, notes)
+    if device_calories:
+        db.update_session_device_calories(session_id, device_calories, device_source or "Manual")
     return JSONResponse({"ok": True})
 
 
@@ -484,7 +488,9 @@ async def log_group_session(
     request: Request,
     session_name: str,
     result: float = Form(...),
-    notes: str = Form(default="")
+    notes: str = Form(default=""),
+    device_calories: Optional[int] = Form(default=None),
+    device_source: str = Form(default=""),
 ):
     session = require_client(request)
     if not session:
@@ -507,8 +513,10 @@ async def log_group_session(
         return JSONResponse({"error": "Session not found"}, status_code=404)
 
     client_id = session["client_id"]
-    db.log_group_session(client_id, session_name, session_type,
-                         found["competition"], result, found["unit"], notes)
+    session_id = db.log_group_session(client_id, session_name, session_type,
+                                      found["competition"], result, found["unit"], notes)
+    if device_calories:
+        db.update_session_device_calories(session_id, device_calories, device_source or "Manual")
     from urllib.parse import quote
     return RedirectResponse(f"/group-session/{quote(session_name)}", status_code=302)
 
@@ -604,6 +612,67 @@ async def save_coach_schedule(request: Request):
         elif session_name == "":
             db.set_weekly_schedule(week_start, day, None, None)
     return RedirectResponse("/coach/schedule", status_code=302)
+
+
+@app.get("/client/activity", response_class=HTMLResponse)
+async def activity_page(request: Request):
+    session = require_client(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+
+    client = db.get_client_by_id(session["client_id"])
+    today_steps = db.get_today_steps(session["client_id"])
+    cal_history = db.get_session_calories_history(session["client_id"], limit=8)
+    cal_pb = db.get_session_calories_pb(session["client_id"])
+
+    return templates.TemplateResponse("activity.html", {
+        "request": request,
+        "client": client,
+        "today_steps": today_steps,
+        "cal_history": cal_history,
+        "cal_pb": cal_pb,
+    })
+
+
+@app.post("/client/steps/log")
+async def log_steps(
+    request: Request,
+    steps: int = Form(...),
+    source: str = Form(default="Manual"),
+    date: str = Form(default=""),
+):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    from datetime import date as dt
+    log_date = date if date else dt.today().strftime("%Y-%m-%d")
+    db.log_steps(session["client_id"], log_date, steps, source)
+    return JSONResponse({"ok": True})
+
+
+@app.get("/client/steps/data")
+async def steps_data(request: Request, view: str = "daily"):
+    session = require_client(request)
+    if not session:
+        return JSONResponse({"error": "Not authenticated"}, status_code=401)
+
+    client_id = session["client_id"]
+    if view == "weekly":
+        data = db.get_steps_weekly(client_id, weeks=8)
+        labels = [d["label"] for d in data]
+        values = [d["total"] for d in data]
+    elif view == "monthly":
+        data = db.get_steps_monthly(client_id, months=6)
+        labels = [d["label"] for d in data]
+        values = [d["total"] for d in data]
+    else:
+        data = db.get_steps_daily(client_id, days=14)
+        from datetime import datetime
+        labels = [datetime.strptime(d["date"], "%Y-%m-%d").strftime("%-d %b") for d in data]
+        values = [d["steps"] for d in data]
+
+    return JSONResponse({"labels": labels, "values": values})
 
 
 @app.post("/coach/add-client")
