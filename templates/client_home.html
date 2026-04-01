@@ -11,30 +11,285 @@
 </div>
 
 <div class="page">
-  <div class="welcome-banner">
-    <div class="welcome-name">Hey, {{ client.name.split(' ')[0] }} 👋</div>
-    {% if last_session %}
-    <div class="last-session-info">
-      Last session: {{ last_session.date }} —
-      <span class="badge badge-day">{{ last_session.programme_day or 'Open' }}</span>
-    </div>
-    {% else %}
-    <div class="last-session-info">No sessions yet — let's get started.</div>
-    {% endif %}
+
+  <!-- Add to Home Screen banner -->
+  <div id="a2hs-banner" style="display:none;background:var(--green);border-radius:12px;padding:16px;margin-bottom:14px;cursor:pointer;" onclick="showA2HSModal()">
+    <div style="font-weight:800;font-size:1rem;color:#000;margin-bottom:4px;">📲 Install the app on your phone</div>
+    <div style="font-size:0.83rem;color:#000;line-height:1.5;">You need to install this properly to get the best experience. Tap here for instructions →</div>
   </div>
 
-  <a href="/schedule" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:14px;font-size:1.05rem;padding:20px;border-radius:var(--radius);text-decoration:none;">
-    This Week's Sessions
+  <!-- Add to Home Screen full-screen modal — all colours hard-coded so nothing breaks -->
+  <div id="a2hs-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f4f4;z-index:9999;overflow-y:auto;">
+    <div style="padding:24px 20px;max-width:480px;margin:0 auto;">
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div style="font-size:1.1rem;font-weight:800;color:#111;">📲 Install the App</div>
+        <button onclick="closeA2HSModal()" style="background:#e0e0e0;border:none;border-radius:50%;width:36px;height:36px;font-size:1rem;cursor:pointer;color:#111;line-height:1;">✕</button>
+      </div>
+
+      <div style="background:#fff3e0;border:2px solid #FF6B00;border-radius:12px;padding:14px 16px;margin-bottom:20px;">
+        <div style="font-weight:800;font-size:0.9rem;color:#FF6B00;margin-bottom:6px;">⚠️ Read this first</div>
+        <div style="font-size:0.88rem;color:#333;line-height:1.6;">This app <strong>must be installed to your home screen</strong> to work properly. Notifications won't work and it won't feel like a real app until you do this.</div>
+      </div>
+
+      <!-- Platform switcher -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <button onclick="switchPlatform('ios')" id="btn-ios"
+          style="flex:1;padding:11px;border-radius:10px;border:2px solid #44AC48;background:#44AC48;color:#000;font-weight:700;font-size:0.88rem;cursor:pointer;">
+          🍎 iPhone / iPad
+        </button>
+        <button onclick="switchPlatform('android')" id="btn-android"
+          style="flex:1;padding:11px;border-radius:10px;border:2px solid #ccc;background:#fff;color:#666;font-weight:700;font-size:0.88rem;cursor:pointer;">
+          🤖 Android
+        </button>
+      </div>
+
+      <!-- iOS steps -->
+      <div id="tab-ios">
+        <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:12px;">
+          <div style="font-size:0.82rem;font-weight:800;color:#FF6B00;margin-bottom:14px;padding:8px 12px;background:#fff3e0;border-radius:8px;">⚠️ Must use Safari — Chrome will NOT work</div>
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">1</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Open this page in <strong>Safari</strong> (the compass icon). If you're in Chrome, copy the address bar link and paste it into Safari.</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">2</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Tap the <strong>Share button</strong> at the bottom — looks like a box with an arrow pointing up ⬆️</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">3</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Scroll down and tap <strong>Add to Home Screen</strong></div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">4</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Tap <strong>Add</strong> in the top right</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">5</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">The Optimal Fitness icon appears on your home screen. <strong>Always open it from there</strong>, not from Safari.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Android steps -->
+      <div id="tab-android" style="display:none;">
+        <div style="background:#fff;border-radius:12px;padding:18px;margin-bottom:12px;">
+          <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">1</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Open this page in <strong>Chrome</strong></div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">2</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Tap the <strong>three dots ⋮</strong> in the top right corner</div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">3</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Tap <strong>Add to Home Screen</strong> or <strong>Install App</strong></div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start;">
+              <div style="background:#44AC48;color:#000;font-weight:800;width:28px;height:28px;min-width:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;">4</div>
+              <div style="font-size:0.9rem;color:#222;line-height:1.5;">Tap <strong>Install</strong> — done. The icon appears on your home screen.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closeA2HSModal()" style="width:100%;padding:14px;border-radius:12px;border:2px solid #ccc;background:#fff;color:#333;font-size:0.95rem;font-weight:700;cursor:pointer;margin-top:4px;">Close</button>
+    </div>
+  </div>
+
+  <!-- Enable notifications banner -->
+  <div id="notif-banner" style="display:none;background:rgba(68,172,72,0.1);border:1px solid rgba(68,172,72,0.3);border-radius:12px;padding:14px 16px;margin-bottom:14px;position:relative;">
+    <button onclick="dismissNotifBanner()" style="position:absolute;top:10px;right:12px;background:none;border:none;color:var(--grey-400);font-size:1.1rem;cursor:pointer;line-height:1;">✕</button>
+    <div style="font-weight:800;font-size:0.9rem;color:var(--text);margin-bottom:6px;">🔔 Get session reminders</div>
+    <div style="font-size:0.82rem;color:var(--grey-400);margin-bottom:10px;line-height:1.5;">Turn on notifications so your coach can ping you when sessions drop or for important updates.</div>
+    <button onclick="enableNotifications()" class="btn btn-primary" style="width:100%;padding:10px;font-size:0.9rem;">Enable Notifications</button>
+  </div>
+
+  <div class="welcome-banner" style="display:flex;align-items:center;gap:14px;">
+    <a href="/client/profile" style="flex-shrink:0;display:block;width:52px;height:52px;text-decoration:none;">
+      {% if has_avatar %}
+      <img src="/client/avatar/{{ client.id }}?v={{ range(1,99999)|random }}"
+           style="width:52px;height:52px;border-radius:50%;object-fit:cover;border:2.5px solid #44AC48;display:block;"
+           onerror="this.style.display='none';document.getElementById('avatar-fallback').style.display='flex';">
+      <div id="avatar-fallback" style="display:none;width:52px;height:52px;border-radius:50%;background:#44AC48;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;color:#000;">
+        {{ client.name[0].upper() }}{% if client.name.split()|length > 1 %}{{ client.name.split()[-1][0].upper() }}{% endif %}
+      </div>
+      {% else %}
+      <div style="width:52px;height:52px;border-radius:50%;background:#44AC48;display:flex;align-items:center;justify-content:center;font-size:1.2rem;font-weight:900;color:#000;border:2.5px solid #44AC48;">
+        {{ client.name[0].upper() }}{% if client.name.split()|length > 1 %}{{ client.name.split()[-1][0].upper() }}{% endif %}
+      </div>
+      {% endif %}
+    </a>
+    <div>
+    <div class="welcome-name">Hey, {{ client.name.split(' ')[0] }} 👋</div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px;">
+      {% if last_session %}
+      <div class="last-session-info">Last: {{ last_session.date }} &nbsp;<span class="badge badge-day">{{ last_session.programme_day or 'Open' }}</span></div>
+      {% else %}
+      <div class="last-session-info">No sessions yet — let's get started.</div>
+      {% endif %}
+      {% if streak > 0 %}
+      <div style="display:flex;align-items:center;gap:4px;background:rgba(68,172,72,0.12);border:1px solid rgba(68,172,72,0.3);border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:700;color:var(--green);">
+        🔥 {{ streak }} week{% if streak != 1 %}s{% endif %}
+      </div>
+      {% endif %}
+    </div>
+    </div>
+  </div>
+
+  {% if coach_note and coach_note.note %}
+  <div style="background:rgba(41,121,255,0.08);border:1.5px solid rgba(41,121,255,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:14px;">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#2979FF;margin-bottom:6px;">📋 Coach's Note</div>
+    <div style="font-size:0.92rem;color:var(--text);line-height:1.5;">{{ coach_note.note }}</div>
+  </div>
+  {% endif %}
+
+  <!-- This Week's Sessions -->
+  <div style="margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);">This Week</div>
+      <a href="/schedule" style="font-size:0.78rem;color:var(--green);font-weight:600;text-decoration:none;">See all →</a>
+    </div>
+    {% for item in weekly_schedule %}
+    {% if item.session_name %}
+    <a href="/group-session/{{ item.session_name | urlencode }}"
+       style="display:flex;align-items:center;gap:14px;background:var(--white);border-radius:12px;padding:14px 16px;margin-bottom:8px;text-decoration:none;border-left:4px solid {% if item.is_today %}var(--green){% elif item.session_type == 'BURN' %}#FF6B00{% elif item.session_type == 'STRONG' %}#2979FF{% else %}#00C853{% endif %};">
+      <div style="min-width:44px;text-align:center;">
+        <div style="font-size:0.7rem;font-weight:700;color:var(--grey-400);">{{ item.day_short }}</div>
+        <div style="font-size:0.9rem;font-weight:800;color:var(--text);">{{ item.date }}</div>
+      </div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:0.95rem;color:var(--text);margin-bottom:3px;">{{ item.session_name }}</div>
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:2px 8px;border-radius:20px;
+          {% if item.session_type == 'BURN' %}background:rgba(255,107,0,0.15);color:#FF6B00;
+          {% elif item.session_type == 'STRONG' %}background:rgba(41,121,255,0.15);color:#2979FF;
+          {% else %}background:rgba(0,200,83,0.15);color:#00C853;{% endif %}">
+          {{ item.session_type }}
+        </span>
+        {% if item.is_today %}<span style="font-size:0.68rem;font-weight:700;color:var(--green);margin-left:6px;">← TODAY</span>{% endif %}
+      </div>
+      <span style="color:var(--grey-400);font-size:1.2rem;">›</span>
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+    <a href="/client/progress" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
+      My Progress
+    </a>
+    <a href="/client/activity" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
+      Activity
+    </a>
+  </div>
+
+  <a href="/client/profile" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:14px;border-radius:var(--radius);text-decoration:none;">
+    👤 My Profile
   </a>
 
-  <a href="/client/history" class="btn btn-ghost" style="display:block;text-align:center;font-size:1rem;padding:16px;border-radius:var(--radius);text-decoration:none;margin-bottom:14px;">
-    My History
+  <a href="/client/hr-zones" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:14px;border-radius:var(--radius);text-decoration:none;">
+    🫀 My Heart Rate Zones
   </a>
 
-  <a href="/client/activity" class="btn btn-ghost" style="display:block;text-align:center;font-size:1rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
-    Activity &amp; Steps
+  <a href="/client/pbs" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:14px;border-radius:var(--radius);text-decoration:none;">
+    🏆 My PBs
+  </a>
+
+  <a href="/client/connect" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:14px;border-radius:var(--radius);text-decoration:none;">
+    ⌚ Connect Your Device
+  </a>
+
+  <a href="/client/history" class="btn btn-ghost" style="display:block;text-align:center;font-size:0.95rem;padding:14px;border-radius:var(--radius);text-decoration:none;">
+    Session History
   </a>
 
 </div>
+
+<script>
+// Add to Home Screen — show every time until actually installed
+function initA2HS() {
+  const isStandalone = window.navigator.standalone === true ||
+                       window.matchMedia('(display-mode: standalone)').matches;
+  if (!isStandalone) {
+    document.getElementById('a2hs-banner').style.display = 'block';
+    // Auto-detect platform and pre-select tab
+    const isAndroid = /android/i.test(navigator.userAgent);
+    if (isAndroid) switchPlatform('android');
+  }
+}
+
+function showA2HSModal() {
+  document.getElementById('a2hs-modal').style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeA2HSModal() {
+  document.getElementById('a2hs-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function switchPlatform(platform) {
+  document.getElementById('tab-ios').style.display = platform === 'ios' ? 'block' : 'none';
+  document.getElementById('tab-android').style.display = platform === 'android' ? 'block' : 'none';
+  document.getElementById('btn-ios').style.background = platform === 'ios' ? 'var(--green)' : 'var(--white)';
+  document.getElementById('btn-ios').style.color = platform === 'ios' ? '#000' : 'var(--grey-400)';
+  document.getElementById('btn-ios').style.borderColor = platform === 'ios' ? 'var(--green)' : 'var(--grey-200)';
+  document.getElementById('btn-android').style.background = platform === 'android' ? 'var(--green)' : 'var(--white)';
+  document.getElementById('btn-android').style.color = platform === 'android' ? '#000' : 'var(--grey-400)';
+  document.getElementById('btn-android').style.borderColor = platform === 'android' ? 'var(--green)' : 'var(--grey-200)';
+}
+
+// Push notifications
+function initNotifBanner() {
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  const dismissed = localStorage.getItem('notif_dismissed');
+  if (Notification.permission === 'granted' || dismissed) return;
+  document.getElementById('notif-banner').style.display = 'block';
+}
+function dismissNotifBanner() {
+  localStorage.setItem('notif_dismissed', '1');
+  document.getElementById('notif-banner').style.display = 'none';
+}
+
+async function enableNotifications() {
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') { dismissNotifBanner(); return; }
+  try {
+    const keyRes = await fetch('/api/push/vapid-public-key');
+    const { publicKey } = await keyRes.json();
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey),
+    });
+    await fetch('/api/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    document.getElementById('notif-banner').style.display = 'none';
+    showToast('Notifications enabled ✓');
+  } catch(e) {
+    showToast('Could not enable notifications');
+    console.error(e);
+  }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return new Uint8Array([...raw].map(c => c.charCodeAt(0)));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  initA2HS();
+  initNotifBanner();
+});
+</script>
 
 {% endblock %}

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>My PBs — Optimal Fitness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .pb-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .pb-card {
+      background: var(--white); border-radius: 12px; padding: 16px 18px;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+    }
+    .pb-info { flex: 1; }
+    .pb-exercise { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .pb-metrics { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pb-metric {
+      background: var(--grey-50); border-radius: 8px; padding: 6px 12px;
+      display: flex; flex-direction: column; align-items: center; min-width: 60px;
+    }
+    .pb-metric-value { font-size: 1.1rem; font-weight: 800; color: var(--green); }
+    .pb-metric-unit { font-size: 0.65rem; color: var(--grey-400); text-transform: uppercase;
+                      letter-spacing: 0.05em; margin-top: 1px; }
+    .pb-date { font-size: 0.75rem; color: var(--grey-400); margin-top: 8px; }
+    .pb-source-badge { font-size: 0.7rem; background: var(--grey-200); color: var(--grey-400);
+                 padding: 2px 8px; border-radius: 20px; white-space: nowrap; }
+    .pb-delete { background: none; border: none; color: var(--grey-400);
+                 font-size: 1rem; cursor: pointer; padding: 4px 8px; margin-top: 4px; }
+    .pb-delete:hover { color: #ff3b30; }
+
+    /* Add PB form */
+    .add-pb-card { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 24px; }
+    .add-pb-card h3 { color: var(--text); font-size: 1rem; margin: 0 0 16px; }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.75rem; color: var(--grey-400);
+                        margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group select {
+      width: 100%; padding: 10px 12px; background: var(--grey-50);
+      border: 1px solid var(--grey-200); border-radius: 8px;
+      color: var(--text); font-size: 0.95rem; box-sizing: border-box;
+    }
+    .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--green); }
+
+    /* Dynamic metric rows */
+    .metric-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .metric-row { display: flex; gap: 8px; align-items: flex-end; width: 100%; box-sizing: border-box; }
+    .metric-row .form-group { margin-bottom: 0; flex: 1; min-width: 0; }
+    .metric-row .form-group.unit-group { flex: 0 0 90px; min-width: 0; }
+    .btn-add-metric {
+      width: 100%; padding: 10px; background: var(--grey-100);
+      color: var(--grey-400); border: 1px dashed var(--grey-200);
+      border-radius: 8px; font-size: 0.85rem; cursor: pointer; margin-bottom: 12px;
+    }
+    .btn-add-metric:hover { border-color: var(--green); color: var(--green); }
+    .btn-remove { background: none; border: none; color: var(--grey-400);
+                  cursor: pointer; font-size: 1.1rem; align-self: flex-end; padding: 10px 6px; }
+    .btn-remove:hover { color: #ff3b30; }
+    .btn-save-pb {
+      width: 100%; padding: 14px; background: var(--green); color: #000;
+      border: none; border-radius: 10px; font-size: 1rem; font-weight: 700;
+      cursor: pointer; margin-top: 4px;
+    }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--grey-400); }
+    .section-label { color: var(--grey-400); font-size: 0.75rem; text-transform: uppercase;
+                     letter-spacing: 0.08em; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/client/home" class="back-btn">←</a>
+    <span>My PBs</span>
+    <span></span>
+  </div>
+
+  <div class="container">
+
+    <!-- Add New PB -->
+    <div class="add-pb-card">
+      <h3>Add a PB</h3>
+      <form method="POST" action="/client/pbs/set" id="pb-form">
+        <div class="form-group">
+          <label>Exercise / Movement</label>
+          <input type="text" name="exercise_name" placeholder="e.g. Bench Press, 5k Run, Deadlift" required>
+        </div>
+
+        <div class="form-group">
+          <label>Date achieved</label>
+          <input type="date" name="date_set">
+        </div>
+
+        <!-- Dynamic metric rows -->
+        <div class="section-label">Metrics</div>
+        <div class="metric-rows" id="metric-rows">
+          <div class="metric-row">
+            <div class="form-group">
+              <label>Value</label>
+              <input type="number" name="metric_value[]" step="any" placeholder="e.g. 100" inputmode="decimal" required>
+            </div>
+            <div class="form-group unit-group">
+              <label>Unit</label>
+              <input type="text" name="metric_unit[]" placeholder="kg / reps" required>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="btn-add-metric" onclick="addMetricRow()">+ Add another metric</button>
+
+        <div class="form-group">
+          <label>Notes (optional)</label>
+          <input type="text" name="notes" placeholder="e.g. paused reps, comp day, belt worn">
+        </div>
+
+        <button type="submit" class="btn-save-pb">Save PB</button>
+      </form>
+    </div>
+
+    <!-- PB List -->
+    {% if pbs %}
+      <div class="section-label">All Personal Bests</div>
+      <div class="pb-grid">
+        {% for pb in pbs %}
+        <div class="pb-card">
+          <div class="pb-info">
+            <div class="pb-exercise">{{ pb.exercise_name }}</div>
+            <div class="pb-metrics">
+              {% if pb.weight_kg %}
+                <div class="pb-metric">
+                  <span class="pb-metric-value">{{ pb.weight_kg }}</span>
+                  <span class="pb-metric-unit">kg</span>
+                </div>
+              {% endif %}
+              {% if pb.reps %}
+                <div class="pb-metric">
+                  <span class="pb-metric-value">{{ pb.reps }}</span>
+                  <span class="pb-metric-unit">reps</span>
+                </div>
+              {% endif %}
+              {% if pb.distance_m %}
+                <div class="pb-metric">
+                  <span class="pb-metric-value">{{ pb.distance_m }}</span>
+                  <span class="pb-metric-unit">m</span>
+                </div>
+              {% endif %}
+              {% if pb.time_seconds %}
+                <div class="pb-metric">
+                  <span class="pb-metric-value">{{ (pb.time_seconds // 60)|int }}:{{ '%02d' % (pb.time_seconds % 60) }}</span>
+                  <span class="pb-metric-unit">time</span>
+                </div>
+              {% endif %}
+              {% if pb.notes and pb.source == 'manual' and pb.notes.startswith('metrics:') %}
+                {% for part in pb.notes.replace('metrics:','').split('|') %}
+                  {% if part %}
+                    {% set kv = part.split(':') %}
+                    {% if kv|length == 2 %}
+                    <div class="pb-metric">
+                      <span class="pb-metric-value">{{ kv[0] }}</span>
+                      <span class="pb-metric-unit">{{ kv[1] }}</span>
+                    </div>
+                    {% endif %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </div>
+            <div class="pb-date">
+              {{ pb.date_set }}
+              {% if pb.notes and not pb.notes.startswith('metrics:') %} · {{ pb.notes }}{% endif %}
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+            <span class="pb-source-badge">{{ pb.source }}</span>
+            {% if pb.source == 'manual' %}
+            <form method="POST" action="/client/pbs/delete/{{ pb.id }}" style="margin:0;">
+              <button type="submit" class="pb-delete" title="Delete">✕</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <p>No PBs yet — add your first one above.</p>
+      </div>
+    {% endif %}
+
+  </div>
+
+  <script>
+    function addMetricRow() {
+      const container = document.getElementById('metric-rows');
+      const row = document.createElement('div');
+      row.className = 'metric-row';
+      row.innerHTML = `
+        <div class="form-group">
+          <label>Value</label>
+          <input type="number" name="metric_value[]" step="any" placeholder="e.g. 20" inputmode="decimal">
+        </div>
+        <div class="form-group unit-group">
+          <label>Unit</label>
+          <select name="metric_unit[]">
+            <option value="kg">kg</option>
+            <option value="reps">reps</option>
+            <option value="cals">cals</option>
+            <option value="m">m</option>
+            <option value="km">km</option>
+            <option value="min">min</option>
+            <option value="sec">sec</option>
+            <option value="%">%</option>
+            <option value="bpm">bpm</option>
+            <option value="pts">pts</option>
+          </select>
+        </div>
+        <button type="button" class="btn-remove" onclick="this.parentElement.remove()" style="flex-shrink:0;">✕</button>
+      `;
+      container.appendChild(row);
+    }
+
+    // Pack multiple metrics into notes field before submit
+    document.getElementById('pb-form').addEventListener('submit', function(e) {
+      const values = document.querySelectorAll('input[name="metric_value[]"]');
+      const units = document.querySelectorAll('select[name="metric_unit[]"]');
+      let metricStr = 'metrics:';
+      let hasMetrics = false;
+      values.forEach((v, i) => {
+        if (v.value) {
+          metricStr += v.value + ':' + units[i].value + '|';
+          hasMetrics = true;
+        }
+      });
+      if (hasMetrics) {
+        const notesInput = document.querySelector('input[name="notes"]');
+        const existingNotes = notesInput.value;
+        notesInput.value = metricStr + (existingNotes ? '__' + existingNotes : '');
+      }
+    });
+  </script>
+</body>
+</html>

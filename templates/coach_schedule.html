@@ -1,46 +1,98 @@
 {% extends "base.html" %}
-{% block title %}Set This Week's Schedule — Optimal Fitness{% endblock %}
+{% block title %}This Week's Schedule — Optimal Fitness{% endblock %}
 {% block content %}
 
 <div class="topbar">
   <a href="/coach" class="topbar-back">‹</a>
-  <span class="topbar-title">Set This Week's Schedule</span>
+  <span class="topbar-title">This Week's Schedule</span>
   <span style="width:36px;"></span>
 </div>
 
 <div class="page">
 
-  <div style="font-size:0.8rem;color:var(--grey-400);margin-bottom:20px;">
-    Week of {{ week_start }}
+  <div style="font-size:0.8rem;color:var(--grey-400);margin-bottom:16px;">Week of {{ week_start }}</div>
+
+  <!-- Tabs -->
+  <div style="display:flex;gap:0;background:var(--grey-100);border-radius:12px;padding:4px;margin-bottom:20px;">
+    <button class="sched-tab active" onclick="showTab('view',this)" style="flex:1;padding:10px;border-radius:9px;font-size:0.85rem;font-weight:600;border:none;background:var(--white);color:var(--text);cursor:pointer;">📋 This Week</button>
+    <button class="sched-tab" onclick="showTab('edit',this)" style="flex:1;padding:10px;border-radius:9px;font-size:0.85rem;font-weight:600;border:none;background:none;color:var(--grey-400);cursor:pointer;">✏️ Edit</button>
   </div>
 
-  <form method="POST" action="/coach/schedule">
+  <!-- VIEW TAB — what coaches see to know what they're coaching -->
+  <div id="tab-view">
     {% for day_row in schedule %}
-    <div class="form-group" style="margin-bottom:16px;">
-      <label style="font-weight:700;font-size:0.9rem;margin-bottom:6px;display:block;">
-        {{ day_row.day }}
-      </label>
-      <select name="{{ day_row.day }}" style="width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--grey-200);background:var(--card-bg);font-size:0.95rem;color:var(--black);">
-        <option value="">Rest Day</option>
-        {% for stype, slist in sessions_data.items() %}
-        <optgroup label="{{ stype }}">
-          {% for s in slist %}
-          <option value="{{ s.name }}"
-            {% if day_row.session_name == s.name %}selected{% endif %}>
-            {{ s.name }}
-          </option>
-          {% endfor %}
-        </optgroup>
-        {% endfor %}
-      </select>
+    {% if day_row.session_name %}
+    {% set info = sessions_lookup.get(day_row.session_name, {}) %}
+    <div style="background:var(--white);border-radius:14px;padding:16px;margin-bottom:12px;border-left:4px solid
+      {% if info.get('type') == 'BURN' %}#FF6B00
+      {% elif info.get('type') == 'STRONG' %}#2979FF
+      {% else %}#00C853{% endif %};">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">
+        <div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--grey-400);text-transform:uppercase;letter-spacing:0.05em;">{{ day_row.day }}</div>
+          <div style="font-size:1.05rem;font-weight:800;color:var(--text);">{{ day_row.session_name }}</div>
+        </div>
+        <span style="font-size:0.68rem;font-weight:700;text-transform:uppercase;padding:3px 10px;border-radius:20px;
+          {% if info.get('type') == 'BURN' %}background:rgba(255,107,0,0.15);color:#FF6B00;
+          {% elif info.get('type') == 'STRONG' %}background:rgba(41,121,255,0.15);color:#2979FF;
+          {% else %}background:rgba(0,200,83,0.15);color:#00C853;{% endif %}">
+          {{ info.get('type', '') }}
+        </span>
+      </div>
+      {% if info.get('competition') %}
+      <div style="background:var(--grey-50);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;color:var(--grey-400);letter-spacing:0.05em;margin-bottom:4px;">🏆 Competition</div>
+        <div style="font-size:0.88rem;color:var(--text);font-weight:600;">{{ info['competition'] }}</div>
+        <div style="font-size:0.78rem;color:var(--grey-400);margin-top:2px;">Track: {{ info.get('metric','') }} ({{ info.get('unit','') }})</div>
+      </div>
+      {% endif %}
     </div>
+    {% else %}
+    <div style="background:var(--white);border-radius:14px;padding:14px 16px;margin-bottom:12px;opacity:0.4;">
+      <div style="font-size:0.72rem;font-weight:700;color:var(--grey-400);text-transform:uppercase;">{{ day_row.day }}</div>
+      <div style="font-size:0.9rem;color:var(--grey-400);">Rest Day</div>
+    </div>
+    {% endif %}
     {% endfor %}
+  </div>
 
-    <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;padding:16px;">
-      Save Schedule
-    </button>
-  </form>
+  <!-- EDIT TAB — set sessions -->
+  <div id="tab-edit" style="display:none;">
+    <form method="POST" action="/coach/schedule">
+      {% for day_row in schedule %}
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="font-weight:700;font-size:0.9rem;margin-bottom:6px;display:block;">{{ day_row.day }}</label>
+        <select name="{{ day_row.day }}" style="width:100%;padding:12px;border-radius:var(--radius);border:1px solid var(--grey-200);background:var(--card-bg);font-size:0.95rem;color:var(--black);">
+          <option value="">Rest Day</option>
+          {% for stype, slist in sessions_data.items() %}
+          <optgroup label="{{ stype }}">
+            {% for s in slist %}
+            <option value="{{ s.name }}" {% if day_row.session_name == s.name %}selected{% endif %}>
+              {{ s.name }}
+            </option>
+            {% endfor %}
+          </optgroup>
+          {% endfor %}
+        </select>
+      </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;padding:16px;">Save Schedule</button>
+    </form>
+  </div>
 
 </div>
+
+<script>
+function showTab(tab, btn) {
+  document.getElementById('tab-view').style.display = tab === 'view' ? 'block' : 'none';
+  document.getElementById('tab-edit').style.display = tab === 'edit' ? 'block' : 'none';
+  document.querySelectorAll('.sched-tab').forEach(t => {
+    t.style.background = 'none';
+    t.style.color = 'var(--grey-400)';
+  });
+  btn.style.background = 'var(--white)';
+  btn.style.color = 'var(--text)';
+}
+</script>
 
 {% endblock %}

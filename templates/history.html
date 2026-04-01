@@ -16,90 +16,203 @@
 
 <div class="page">
 
-  {% if pbs %}
-  <div class="section-header">
-    <span class="section-title">Personal Bests</span>
-  </div>
-
-  <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-    {% for pb in pbs %}
-    <div class="badge badge-green" style="font-size:0.78rem;padding:5px 10px;">
-      {{ pb.exercise_name }}
-      {% if pb.best_weight %} · {{ pb.best_weight }}kg{% endif %}
-      {% if pb.best_reps %} · {{ pb.best_reps }} reps{% endif %}
-    </div>
-    {% endfor %}
+  {% if is_coach_view %}
+  <div class="card" style="padding:16px;margin-bottom:16px;">
+    <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#2979FF;margin-bottom:10px;">📋 Coach's Note</div>
+    <form method="POST" action="/coach/client/{{ client.id }}/note">
+      <textarea name="note" rows="3" placeholder="Leave a note for {{ client.name.split(' ')[0] }}..."
+        style="width:100%;padding:10px;background:var(--grey-50);border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;color:var(--text);resize:none;box-sizing:border-box;margin-bottom:10px;">{% if coach_note %}{{ coach_note.note }}{% endif %}</textarea>
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:12px;">Save Note</button>
+    </form>
   </div>
   {% endif %}
 
-  <div class="section-header">
-    <span class="section-title">Sessions</span>
-    <span class="text-muted">{{ sessions|length }} total</span>
+  <!-- Summary -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;">
+    <div style="flex:1;background:rgba(255,107,0,0.1);border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:800;color:#FF6B00;">{{ burn_sessions|length }}</div>
+      <div style="font-size:0.7rem;color:#FF6B00;text-transform:uppercase;letter-spacing:0.05em;">BURN</div>
+    </div>
+    <div style="flex:1;background:rgba(41,121,255,0.1);border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:800;color:#2979FF;">{{ strong_sessions|length }}</div>
+      <div style="font-size:0.7rem;color:#2979FF;text-transform:uppercase;letter-spacing:0.05em;">STRONG</div>
+    </div>
+    <div style="flex:1;background:rgba(0,200,83,0.1);border-radius:12px;padding:14px;text-align:center;">
+      <div style="font-size:1.4rem;font-weight:800;color:#00C853;">{{ hybrid_sessions|length }}</div>
+      <div style="font-size:0.7rem;color:#00C853;text-transform:uppercase;letter-spacing:0.05em;">HYBRID</div>
+    </div>
   </div>
 
-  {% if sessions %}
-    {% for s in sessions %}
-    <div class="history-session">
-      <div class="history-session-header">
-        <div>
-          <div style="font-weight:700;font-size:0.95rem;">{{ s.date }}</div>
-          <div style="font-size:0.8rem;color:var(--grey-400);margin-top:2px;">
-            <span class="badge badge-day" style="font-size:0.7rem;">{{ s.programme_day or 'Open' }}</span>
-            &nbsp;{{ s.logs|length }} sets logged
-            {% if s.completed_at %}
-            &nbsp;<span class="badge badge-green" style="font-size:0.7rem;">Complete</span>
-            {% endif %}
-          </div>
-        </div>
-        <span class="history-arrow">▼</span>
-      </div>
+  <!-- Filter tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;">
+    <button class="filter-tab active" onclick="filterSessions('all', this)">All ({{ total }})</button>
+    <button class="filter-tab" onclick="filterSessions('burn', this)" style="color:#FF6B00;border-color:#FF6B00;">🔥 BURN</button>
+    <button class="filter-tab" onclick="filterSessions('strong', this)" style="color:#2979FF;border-color:#2979FF;">💪 STRONG</button>
+    <button class="filter-tab" onclick="filterSessions('hybrid', this)" style="color:#00C853;border-color:#00C853;">⚡ HYBRID</button>
+  </div>
 
-      <div class="history-session-body">
-        {% if s.logs %}
-          {% set grouped = {} %}
-          {% for log in s.logs %}
-            {% if log.exercise_name not in grouped %}
-              {% set _ = grouped.update({log.exercise_name: []}) %}
-            {% endif %}
-            {% set _ = grouped[log.exercise_name].append(log) %}
-          {% endfor %}
+  <style>
+    .filter-tab {
+      padding: 8px 16px; border-radius: 20px; border: 1px solid var(--grey-200);
+      background: var(--white); color: var(--grey-400); font-size: 0.82rem;
+      font-weight: 600; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .filter-tab.active { background: var(--green); color: #000; border-color: var(--green); }
+    .session-group { display: none; }
+    .session-group.visible { display: block; }
+    .history-session {
+      background: var(--white); border-radius: 12px; margin-bottom: 10px; overflow: hidden;
+    }
+    .history-session-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; cursor: pointer;
+    }
+    .history-session-body { display: none; padding: 0 16px 14px; border-top: 1px solid var(--grey-100); }
+    .history-session.open .history-session-body { display: block; }
+    .history-session.open .history-arrow { transform: rotate(180deg); }
+    .history-arrow { color: var(--grey-400); font-size: 0.7rem; transition: transform 0.2s; }
+    .session-type-pill {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; padding: 3px 8px; border-radius: 20px; margin-right: 6px;
+    }
+    .pill-burn { background: rgba(255,107,0,0.15); color: #FF6B00; }
+    .pill-strong { background: rgba(41,121,255,0.15); color: #2979FF; }
+    .pill-hybrid { background: rgba(0,200,83,0.15); color: #00C853; }
+    .stat-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .stat-chip { background: var(--grey-50); border-radius: 8px; padding: 4px 10px;
+                 font-size: 0.78rem; color: var(--grey-600); }
+    .stat-chip span { color: var(--green); font-weight: 700; }
+  </style>
 
-          {% for exercise_name, logs in grouped.items() %}
-          <div class="log-group">
-            <div class="log-group-name">{{ exercise_name }}</div>
-            {% for log in logs %}
-            <div class="log-entry">
-              Set {{ log.set_number }}:
-              {% if log.weight_kg %}<strong>{{ log.weight_kg }}kg</strong>{% endif %}
-              {% if log.reps %} × {{ log.reps }} reps{% endif %}
-              {% if log.duration_seconds %} · {{ log.duration_seconds }}s{% endif %}
-              {% if log.calories %} · {{ log.calories }} cal{% endif %}
-              {% if log.rpe %} · RPE {{ log.rpe }}{% endif %}
-              {% if log.notes %} · <em>{{ log.notes }}</em>{% endif %}
+  <!-- BURN sessions -->
+  <div class="session-group visible" id="group-all">
+    {% set all_sessions = burn_sessions + strong_sessions + hybrid_sessions + other_sessions %}
+    {% for s in all_sessions|sort(attribute='date', reverse=True) %}
+      {% set stype = (s.session_type or '')|upper %}
+      <div class="history-session" onclick="toggleSession(this)">
+        <div class="history-session-header">
+          <div>
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin-bottom:4px;">
+              {% if stype == 'BURN' %}<span class="session-type-pill pill-burn">BURN</span>
+              {% elif stype == 'STRONG' %}<span class="session-type-pill pill-strong">STRONG</span>
+              {% elif stype == 'HYBRID' %}<span class="session-type-pill pill-hybrid">HYBRID</span>
+              {% endif %}
+              <span style="font-weight:700;font-size:0.95rem;color:var(--text);">{{ s.session_name or 'Session' }}</span>
             </div>
-            {% endfor %}
+            <div style="font-size:0.78rem;color:var(--grey-400);">{{ s.date }}</div>
           </div>
-          {% endfor %}
-        {% else %}
-          <p class="text-muted" style="font-size:0.85rem;">No sets logged for this session.</p>
-        {% endif %}
-
-        {% if s.notes %}
-        <div style="margin-top:8px;font-size:0.82rem;color:var(--grey-600);font-style:italic;">
-          Notes: {{ s.notes }}
+          <span class="history-arrow">▼</span>
         </div>
-        {% endif %}
+        <div class="history-session-body">
+          <div class="stat-row">
+            {% if s.competition_metric %}
+            <div class="stat-chip">{{ s.competition_metric }}: <span>
+              {% if s.reps %}{{ s.reps }} reps{% endif %}
+              {% if s.weight_kg %}{{ s.weight_kg }}kg{% endif %}
+              {% if s.comp_cals %}{{ s.comp_cals }} cals{% endif %}
+            </span></div>
+            {% endif %}
+            {% if s.avg_hr %}<div class="stat-chip">Avg HR <span>{{ s.avg_hr }}bpm</span></div>{% endif %}
+            {% if s.max_hr %}<div class="stat-chip">Max HR <span>{{ s.max_hr }}bpm</span></div>{% endif %}
+            {% if s.device_calories %}<div class="stat-chip">Cals <span>{{ s.device_calories }}</span></div>{% endif %}
+          </div>
+        </div>
       </div>
-    </div>
+    {% else %}
+      <div class="empty-state"><div class="empty-state-icon">📋</div><p>No sessions yet.</p></div>
     {% endfor %}
-
-  {% else %}
-  <div class="empty-state">
-    <div class="empty-state-icon">📋</div>
-    <p>No sessions yet. Start your first one.</p>
   </div>
-  {% endif %}
+
+  <div class="session-group" id="group-burn">
+    {% for s in burn_sessions %}
+      <div class="history-session" onclick="toggleSession(this)">
+        <div class="history-session-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <span class="session-type-pill pill-burn">BURN</span>
+              <span style="font-weight:700;font-size:0.95rem;color:var(--text);">{{ s.session_name }}</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--grey-400);">{{ s.date }}</div>
+          </div>
+          <span class="history-arrow">▼</span>
+        </div>
+        <div class="history-session-body">
+          <div class="stat-row">
+            {% if s.competition_metric %}<div class="stat-chip">{{ s.competition_metric }}: <span>{% if s.reps %}{{ s.reps }} reps{% elif s.weight_kg %}{{ s.weight_kg }}kg{% elif s.comp_cals %}{{ s.comp_cals }} cals{% endif %}</span></div>{% endif %}
+            {% if s.avg_hr %}<div class="stat-chip">Avg HR <span>{{ s.avg_hr }}bpm</span></div>{% endif %}
+            {% if s.device_calories %}<div class="stat-chip">Cals <span>{{ s.device_calories }}</span></div>{% endif %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty-state"><p>No BURN sessions yet.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="session-group" id="group-strong">
+    {% for s in strong_sessions %}
+      <div class="history-session" onclick="toggleSession(this)">
+        <div class="history-session-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <span class="session-type-pill pill-strong">STRONG</span>
+              <span style="font-weight:700;font-size:0.95rem;color:var(--text);">{{ s.session_name }}</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--grey-400);">{{ s.date }}</div>
+          </div>
+          <span class="history-arrow">▼</span>
+        </div>
+        <div class="history-session-body">
+          <div class="stat-row">
+            {% if s.competition_metric %}<div class="stat-chip">{{ s.competition_metric }}: <span>{% if s.reps %}{{ s.reps }} reps{% elif s.weight_kg %}{{ s.weight_kg }}kg{% elif s.comp_cals %}{{ s.comp_cals }} cals{% endif %}</span></div>{% endif %}
+            {% if s.avg_hr %}<div class="stat-chip">Avg HR <span>{{ s.avg_hr }}bpm</span></div>{% endif %}
+            {% if s.device_calories %}<div class="stat-chip">Cals <span>{{ s.device_calories }}</span></div>{% endif %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty-state"><p>No STRONG sessions yet.</p></div>
+    {% endfor %}
+  </div>
+
+  <div class="session-group" id="group-hybrid">
+    {% for s in hybrid_sessions %}
+      <div class="history-session" onclick="toggleSession(this)">
+        <div class="history-session-header">
+          <div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <span class="session-type-pill pill-hybrid">HYBRID</span>
+              <span style="font-weight:700;font-size:0.95rem;color:var(--text);">{{ s.session_name }}</span>
+            </div>
+            <div style="font-size:0.78rem;color:var(--grey-400);">{{ s.date }}</div>
+          </div>
+          <span class="history-arrow">▼</span>
+        </div>
+        <div class="history-session-body">
+          <div class="stat-row">
+            {% if s.competition_metric %}<div class="stat-chip">{{ s.competition_metric }}: <span>{% if s.reps %}{{ s.reps }} reps{% elif s.weight_kg %}{{ s.weight_kg }}kg{% elif s.comp_cals %}{{ s.comp_cals }} cals{% endif %}</span></div>{% endif %}
+            {% if s.avg_hr %}<div class="stat-chip">Avg HR <span>{{ s.avg_hr }}bpm</span></div>{% endif %}
+            {% if s.device_calories %}<div class="stat-chip">Cals <span>{{ s.device_calories }}</span></div>{% endif %}
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="empty-state"><p>No HYBRID sessions yet.</p></div>
+    {% endfor %}
+  </div>
 
 </div>
+
+<script>
+  function filterSessions(type, btn) {
+    document.querySelectorAll('.session-group').forEach(g => g.classList.remove('visible'));
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('group-' + type).classList.add('visible');
+    btn.classList.add('active');
+  }
+  function toggleSession(el) {
+    el.classList.toggle('open');
+  }
+</script>
 
 {% endblock %}

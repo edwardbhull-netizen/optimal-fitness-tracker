@@ -316,7 +316,12 @@ async function submitLog(e) {
 
       updateExerciseCard(currentExercise.name, exerciseSetsLogged[currentExercise.name]);
       closeLogModal();
-      showToast('Set logged!');
+
+      if (data.is_pr) {
+        showToast('🏆 New personal best!', 3000);
+      } else {
+        showToast('Set logged!');
+      }
     } else {
       showToast('Error logging set');
     }
@@ -371,8 +376,12 @@ async function doFinishSession() {
 
   const calsInput = document.getElementById('finish-cals-input');
   const sourceSelect = document.getElementById('finish-cals-source');
+  const avgHrInput = document.getElementById('finish-avg-hr');
+  const maxHrInput = document.getElementById('finish-max-hr');
   const deviceCals = calsInput ? calsInput.value : '';
   const deviceSource = sourceSelect ? sourceSelect.value : 'Manual';
+  const avgHr = avgHrInput ? avgHrInput.value : '';
+  const maxHr = maxHrInput ? maxHrInput.value : '';
 
   try {
     const form = new FormData();
@@ -381,11 +390,13 @@ async function doFinishSession() {
       form.append('device_calories', deviceCals);
       form.append('device_source', deviceSource);
     }
+    if (avgHr) form.append('avg_hr', avgHr);
+    if (maxHr) form.append('max_hr', maxHr);
     await fetch(`/client/session/${activeSessionId}/complete`, { method: 'POST', body: form });
     const dayKey = document.getElementById('programme-day').value;
     sessionStorage.removeItem('session_id_' + dayKey);
-    showToast('Session complete!', 1500);
-    setTimeout(() => window.location.href = '/client/history', 1600);
+    showToast('Session complete! 🔥', 1500);
+    setTimeout(() => window.location.href = `/client/recovery/${activeSessionId}`, 1600);
   } catch (e) {
     showToast('Error finishing session');
     if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.textContent = 'Confirm & Finish'; }

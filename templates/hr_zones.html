@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Heart Rate Zones — Optimal Fitness{% endblock %}
+{% block content %}
+
+<style>
+  .zone-card {
+    border-radius: 14px; padding: 16px 18px; margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .zone-left { flex: 1; }
+  .zone-number { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
+  .zone-name { font-size: 1rem; font-weight: 800; color: var(--text); margin-bottom: 2px; }
+  .zone-bpm { font-size: 1.4rem; font-weight: 900; margin-bottom: 3px; }
+  .zone-desc { font-size: 0.78rem; color: var(--grey-400); line-height: 1.4; }
+  .zone-right { text-align: right; flex-shrink: 0; }
+  .zone-pct { font-size: 0.85rem; font-weight: 800; }
+  .target-tag { font-size: 0.62rem; font-weight: 800; padding: 3px 9px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; display: inline-block; margin-top: 6px; }
+</style>
+
+<div class="topbar">
+  <a href="/client/home" class="back-btn">←</a>
+  <span>Heart Rate Zones</span>
+  <span></span>
+</div>
+
+<div class="container">
+
+  {% if not hr_data %}
+  <!-- No profile yet -->
+  <div style="background:var(--white);border-radius:16px;padding:30px 20px;text-align:center;margin-bottom:16px;">
+    <div style="font-size:2rem;margin-bottom:12px;">🫀</div>
+    <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:8px;">Set up your profile first</div>
+    <div style="font-size:0.88rem;color:var(--grey-400);margin-bottom:20px;line-height:1.5;">We need your date of birth and goal to calculate your personal heart rate zones.</div>
+    <a href="/client/profile" class="btn btn-primary" style="display:inline-block;padding:14px 28px;border-radius:12px;text-decoration:none;">Go to My Profile →</a>
+  </div>
+
+  {% else %}
+
+  <!-- Max HR + method -->
+  <div style="background:var(--white);border-radius:16px;padding:18px 20px;margin-bottom:14px;">
+    <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);margin-bottom:10px;">Your Stats</div>
+    <div style="display:flex;gap:0;justify-content:space-between;">
+      <div style="text-align:center;flex:1;">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--text);">{{ hr_data.max_hr }}</div>
+        <div style="font-size:0.72rem;color:var(--grey-400);font-weight:600;text-transform:uppercase;">Max HR (bpm)</div>
+      </div>
+      <div style="text-align:center;flex:1;">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--text);">{{ hr_data.age }}</div>
+        <div style="font-size:0.72rem;color:var(--grey-400);font-weight:600;text-transform:uppercase;">Age</div>
+      </div>
+      {% if hr_data.resting_hr %}
+      <div style="text-align:center;flex:1;">
+        <div style="font-size:1.8rem;font-weight:900;color:var(--text);">{{ hr_data.resting_hr }}</div>
+        <div style="font-size:0.72rem;color:var(--grey-400);font-weight:600;text-transform:uppercase;">Resting HR</div>
+      </div>
+      {% endif %}
+    </div>
+    <div style="font-size:0.75rem;color:var(--grey-400);margin-top:12px;text-align:center;">Method: {{ hr_data.method }}</div>
+  </div>
+
+  <!-- Target zone -->
+  {% if hr_data.target %}
+  <div style="background:rgba(68,172,72,0.1);border:2px solid rgba(68,172,72,0.35);border-radius:14px;padding:16px 18px;margin-bottom:14px;">
+    <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--green);margin-bottom:6px;">🎯 Your Target Zone</div>
+    <div style="font-size:1rem;font-weight:800;color:var(--text);margin-bottom:6px;">{{ hr_data.target.label }}</div>
+    <div style="font-size:0.84rem;color:var(--grey-400);line-height:1.5;">{{ hr_data.target.why }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Zone bars -->
+  <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);margin-bottom:10px;">All Zones</div>
+
+  {% for z in hr_data.zones %}
+  {% set is_target = hr_data.target and z.number in hr_data.target.zones %}
+  <div class="zone-card" style="background:{{ z.color }}18;border:{{ '2px' if is_target else '1.5px' }} solid {{ z.color }};">
+    <div class="zone-left">
+      <div class="zone-number" style="color:{{ z.color }};">Zone {{ z.number }}</div>
+      <div class="zone-name">{{ z.name }}</div>
+      <div class="zone-bpm" style="color:{{ z.color }};">{{ z.bpm_low }}–{{ z.bpm_high }} <span style="font-size:0.9rem;font-weight:600;">bpm</span></div>
+      <div class="zone-desc">{{ z.label }}</div>
+    </div>
+    <div class="zone-right">
+      <div class="zone-pct" style="color:{{ z.color }};">{{ z.pct_low }}–{{ z.pct_high }}%</div>
+      {% if is_target %}
+      <div><span class="target-tag" style="background:{{ z.color }};">Target</span></div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <a href="/client/profile" class="btn btn-ghost" style="display:block;text-align:center;padding:14px;border-radius:var(--radius);text-decoration:none;margin-top:8px;margin-bottom:30px;">
+    ✏️ Edit Profile
+  </a>
+
+  {% endif %}
+
+</div>
+
+{% endblock %}

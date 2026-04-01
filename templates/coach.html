@@ -2,6 +2,19 @@
 {% block title %}Coach Dashboard — Optimal Fitness{% endblock %}
 {% block content %}
 
+<style>
+  .coach-note-preview { font-size:0.78rem; color:#2979FF; margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px; }
+  .note-none { color:var(--grey-400); font-style:italic; }
+  .member-row { display:flex; align-items:center; gap:12px; background:var(--white); border-radius:12px; padding:14px 16px; margin-bottom:8px; }
+  .coach-row { display:flex; align-items:center; gap:12px; background:var(--white); border-radius:12px; padding:12px 16px; margin-bottom:8px; }
+  .avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; flex-shrink:0; }
+  .avatar-member { background:var(--green); color:#000; }
+  .avatar-coach { background:#2979FF; color:#fff; }
+  .row-info { flex:1; min-width:0; }
+  .row-name { font-weight:700; font-size:0.95rem; color:var(--text); margin-bottom:2px; }
+  .row-meta { font-size:0.78rem; color:var(--grey-400); }
+</style>
+
 <div class="topbar">
   <span style="width:36px;"></span>
   <span class="topbar-title">Coach Dashboard</span>
@@ -16,12 +29,31 @@
     <div class="welcome-name">Hey, {{ coach_name }} 👋</div>
   </div>
 
-  <a href="/coach/schedule" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:20px;font-size:1rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
-    Set This Week's Schedule
+  <!-- Quick actions -->
+  <a href="/coach/schedule" class="btn btn-primary" style="display:block;text-align:center;margin-bottom:10px;font-size:1rem;padding:16px;border-radius:var(--radius);text-decoration:none;">
+    📋 This Week's Schedule
   </a>
 
-  <!-- Summary stats -->
-  <div class="stats-row">
+  <button onclick="document.getElementById('push-section').classList.toggle('hidden')"
+          class="btn btn-ghost" style="width:100%;margin-bottom:20px;padding:14px;font-size:0.9rem;">
+    🔔 Send Push Notification
+  </button>
+  <div id="push-section" class="hidden" style="background:var(--white);border-radius:var(--radius);padding:16px;margin-bottom:20px;">
+    <div style="font-size:0.8rem;font-weight:700;color:var(--grey-400);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">Message all members</div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="push-title" value="Optimal Fitness" placeholder="Notification title">
+    </div>
+    <div class="form-group">
+      <label>Message</label>
+      <textarea id="push-body" rows="2" placeholder="e.g. Tonight's session is The Incinerator — see you at 6pm!" style="width:100%;padding:10px;background:var(--grey-50);border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;resize:none;box-sizing:border-box;color:var(--text);"></textarea>
+    </div>
+    <button onclick="sendPush()" class="btn btn-primary" style="width:100%;padding:12px;">Send to All Members</button>
+    <div id="push-result" style="margin-top:10px;font-size:0.82rem;color:var(--grey-400);text-align:center;"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" style="margin-bottom:24px;">
     <div class="stat-card">
       <div class="stat-number">{{ clients|length }}</div>
       <div class="stat-label">Members</div>
@@ -36,53 +68,15 @@
     </div>
   </div>
 
-  <!-- Client list -->
+  <!-- ── MEMBERS ──────────────────────────────────────────── -->
   <div class="section-header">
     <span class="section-title">Members</span>
-    <button id="toggle-add-client" class="btn btn-ghost btn-sm">+ Add</button>
+    <button id="toggle-add-client" class="btn btn-primary btn-sm" style="font-size:0.85rem;padding:8px 16px;">+ Add Member</button>
   </div>
 
-  {% if clients %}
-    {% for c in clients %}
-    <a href="/coach/client/{{ c.id }}" class="client-row">
-      <div class="client-avatar">{{ c.name[0].upper() }}</div>
-      <div class="client-info">
-        <div class="client-name">{{ c.name }}</div>
-        <div class="client-meta">
-          {% if c.last_session_date %}
-            Last: {{ c.last_session_date }}
-          {% else %}
-            No sessions yet
-          {% endif %}
-          &nbsp;·&nbsp;
-          <span style="color:{% if c.sessions_this_week > 0 %}var(--green){% else %}var(--grey-400){% endif %}">
-            {{ c.sessions_this_week }} this week
-          </span>
-        </div>
-        {% if c.recent_pbs %}
-        <div class="client-meta" style="margin-top:3px;">
-          PBs:
-          {% for pb in c.recent_pbs %}
-            <span class="badge badge-green" style="font-size:0.65rem;padding:2px 6px;">
-              {{ pb.exercise_name }}{% if pb.best_weight %} {{ pb.best_weight }}kg{% endif %}
-            </span>
-          {% endfor %}
-        </div>
-        {% endif %}
-      </div>
-      <span class="client-arrow">›</span>
-    </a>
-    {% endfor %}
-  {% else %}
-  <div class="empty-state">
-    <div class="empty-state-icon">👥</div>
-    <p>No members yet. Add your first one below.</p>
-  </div>
-  {% endif %}
-
-  <!-- Add client section -->
-  <div class="add-client-section hidden" id="add-client-section">
-    <h3 style="margin-bottom:16px;">Add New Member</h3>
+  <!-- Add member form -->
+  <div class="hidden" id="add-client-section" style="background:var(--white);border-radius:var(--radius);padding:20px;margin-bottom:16px;">
+    <div style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--grey-400);margin-bottom:14px;">New Member</div>
     <form id="add-client-form">
       <div class="form-group">
         <label>Full Name</label>
@@ -90,18 +84,76 @@
       </div>
       <div class="form-group">
         <label>4-Digit PIN</label>
-        <input type="text" name="pin" class="pin-input" maxlength="4" pattern="[0-9]{4}"
-               inputmode="numeric" placeholder="1234" required>
+        <input type="text" name="pin" class="pin-input" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" placeholder="e.g. 1234" required>
       </div>
-      <div class="form-group">
-        <label>Programme File Path (optional)</label>
-        <input type="text" name="programme_path"
-               placeholder="/path/to/client_programme.md">
-      </div>
-      <button type="submit" class="btn btn-primary">Add Member</button>
+      <button type="submit" class="btn btn-primary" style="width:100%;">Add Member</button>
     </form>
   </div>
 
+  {% if clients %}
+    {% for c in clients %}
+    <div class="member-row">
+      <a href="/coach/client/{{ c.id }}" style="display:flex;align-items:center;gap:12px;flex:1;text-decoration:none;min-width:0;">
+        <div class="avatar avatar-member">{{ c.name[0].upper() }}</div>
+        <div class="row-info">
+          <div class="row-name">{{ c.name }}</div>
+          <div class="row-meta">
+            {% if c.last_session_date %}Last: {{ c.last_session_date }}{% else %}No sessions yet{% endif %}
+            &nbsp;·&nbsp;
+            <span style="color:{% if c.sessions_this_week > 0 %}var(--green){% else %}var(--grey-400){% endif %};">{{ c.sessions_this_week }} this week</span>
+          </div>
+          {% if c.coach_note %}
+          <div class="coach-note-preview">📋 {{ c.coach_note }}</div>
+          {% else %}
+          <div class="coach-note-preview note-none">No note yet</div>
+          {% endif %}
+        </div>
+        <span style="color:var(--grey-400);font-size:1.2rem;flex-shrink:0;">›</span>
+      </a>
+      <form method="POST" action="/coach/delete-client/{{ c.id }}" style="margin:0;flex-shrink:0;" onsubmit="return confirm('Delete {{ c.name }}? This cannot be undone.')">
+        <button type="submit" style="background:rgba(239,83,80,0.1);border:none;border-radius:8px;padding:8px 10px;color:#EF5350;font-size:0.8rem;font-weight:700;cursor:pointer;">Delete</button>
+      </form>
+    </div>
+    {% endfor %}
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-state-icon">👥</div>
+    <p>No members yet. Add your first one above.</p>
+  </div>
+  {% endif %}
+
+  <!-- ── COACHES ──────────────────────────────────────────── -->
+  <div class="section-header" style="margin-top:28px;">
+    <span class="section-title">Coaching Team</span>
+  </div>
+
+  {% for coach in coaches %}
+  <div class="coach-row">
+    <div class="avatar avatar-coach">{{ coach.name[0].upper() }}</div>
+    <div class="row-info">
+      <div class="row-name">{{ coach.name }}</div>
+      <div class="row-meta">Coach · PIN {{ '••••' }}</div>
+    </div>
+  </div>
+  {% endfor %}
+
 </div>
+
+<script>
+async function sendPush() {
+  const title = document.getElementById('push-title').value.trim() || 'Optimal Fitness';
+  const body = document.getElementById('push-body').value.trim();
+  const result = document.getElementById('push-result');
+  if (!body) { result.textContent = 'Enter a message first.'; return; }
+  result.textContent = 'Sending...';
+  const form = new FormData();
+  form.append('title', title);
+  form.append('body', body);
+  const res = await fetch('/coach/push/send', { method: 'POST', body: form });
+  const data = await res.json();
+  result.textContent = `Sent to ${data.sent} member${data.sent !== 1 ? 's' : ''}${data.failed ? ` (${data.failed} failed)` : ''}.`;
+  document.getElementById('push-body').value = '';
+}
+</script>
 
 {% endblock %}

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}My Profile — Optimal Fitness{% endblock %}
+{% block content %}
+
+<style>
+  .section-card { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 14px; }
+  .section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--grey-400); margin-bottom: 14px; }
+  .field-group { margin-bottom: 14px; }
+  .field-group:last-child { margin-bottom: 0; }
+  .field-group label { font-size: 0.8rem; font-weight: 600; color: var(--grey-400); display: block; margin-bottom: 6px; }
+  .field-group input, .field-group select, .field-group textarea {
+    width: 100%; padding: 12px 14px; border-radius: 10px;
+    border: 1.5px solid var(--grey-200); background: var(--grey-50);
+    font-size: 0.95rem; color: var(--text); font-family: inherit;
+    box-sizing: border-box; -webkit-appearance: none; appearance: none;
+  }
+  .field-group textarea { resize: none; }
+  .goal-option {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px; border-radius: 10px; margin-bottom: 8px;
+    cursor: pointer; border: 1.5px solid var(--grey-200);
+    background: var(--grey-50);
+  }
+  .goal-option input[type=radio] { accent-color: var(--green); width: 18px; height: 18px; flex-shrink: 0; }
+  .goal-option span { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+</style>
+
+<div class="topbar">
+  <a href="/client/home" class="back-btn">←</a>
+  <span>My Profile</span>
+  <span></span>
+</div>
+
+<div class="container">
+
+  <!-- Avatar -->
+  <div style="display:flex;flex-direction:column;align-items:center;padding:24px 0 20px;">
+    <div id="avatar-wrap" style="position:relative;width:90px;height:90px;margin-bottom:12px;">
+      {% if has_avatar %}
+      <img id="avatar-img" src="/client/avatar/{{ client.id }}?v={{ range(1,9999) | random }}"
+           style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--green);">
+      {% else %}
+      <div id="avatar-initials" style="width:90px;height:90px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:#000;border:3px solid var(--green);">
+        {{ client.name[0].upper() }}{% if client.name.split()|length > 1 %}{{ client.name.split()[-1][0].upper() }}{% endif %}
+      </div>
+      {% endif %}
+      <!-- Camera button -->
+      <label for="avatar-input" style="position:absolute;bottom:0;right:0;background:var(--green);border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:0.85rem;border:2px solid var(--white);">
+        📷
+      </label>
+      <input type="file" id="avatar-input" accept="image/*" capture="user" style="display:none;">
+    </div>
+    <div style="font-size:0.78rem;color:var(--grey-400);">Tap 📷 to add a photo</div>
+  </div>
+
+  <form method="POST" action="/client/profile">
+
+    <div class="section-card">
+      <div class="section-label">About You</div>
+      <div class="field-group">
+        <label>Date of Birth</label>
+        <input type="date" name="dob" value="{{ profile.dob if profile else '' }}">
+      </div>
+      <div class="field-group">
+        <label>Sex</label>
+        <select name="sex">
+          <option value="">Select</option>
+          <option value="male" {% if profile and profile.sex == 'male' %}selected{% endif %}>Male</option>
+          <option value="female" {% if profile and profile.sex == 'female' %}selected{% endif %}>Female</option>
+          <option value="prefer_not" {% if profile and profile.sex == 'prefer_not' %}selected{% endif %}>Prefer not to say</option>
+        </select>
+      </div>
+      <div class="field-group">
+        <label>Height (cm)</label>
+        <input type="number" name="height_cm" placeholder="e.g. 175" inputmode="numeric" value="{{ profile.height_cm if profile and profile.height_cm else '' }}">
+      </div>
+      <div class="field-group">
+        <label>Weight (kg)</label>
+        <input type="number" name="weight_kg" placeholder="e.g. 80" step="0.1" inputmode="decimal" value="{{ profile.weight_kg if profile and profile.weight_kg else '' }}">
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">Your Goal</div>
+      {% for value, label in goals %}
+      <label class="goal-option" style="border-color:{% if profile and profile.goal == value %}var(--green){% else %}var(--grey-200){% endif %};background:{% if profile and profile.goal == value %}rgba(68,172,72,0.06){% else %}var(--grey-50){% endif %};">
+        <input type="radio" name="goal" value="{{ value }}" {% if profile and profile.goal == value %}checked{% endif %}>
+        <span>{{ label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">Your Fitness</div>
+      <div class="field-group">
+        <label>Current Fitness Level</label>
+        <select name="fitness_level">
+          <option value="">Select</option>
+          {% for level in fitness_levels %}
+          <option value="{{ level }}" {% if profile and profile.fitness_level == level %}selected{% endif %}>{{ level }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field-group">
+        <label>How often do you train?</label>
+        <select name="training_freq">
+          <option value="">Select</option>
+          {% for freq in freq_options %}
+          <option value="{{ freq }}" {% if profile and profile.training_freq == freq %}selected{% endif %}>{{ freq }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">Heart Rate (optional)</div>
+      <div style="font-size:0.82rem;color:var(--grey-400);margin-bottom:14px;line-height:1.5;">
+        Enter your resting heart rate for more accurate HR zones. Check it first thing in the morning. Leave blank and we'll use your age.
+      </div>
+      <div class="field-group">
+        <label>Resting Heart Rate (bpm)</label>
+        <input type="number" name="resting_hr" placeholder="e.g. 58" inputmode="numeric" value="{{ profile.resting_hr if profile and profile.resting_hr else '' }}">
+      </div>
+      <div class="field-group">
+        <label>Max Heart Rate — only if you know it (bpm)</label>
+        <input type="number" name="max_hr_manual" placeholder="e.g. 182" inputmode="numeric" value="{{ profile.max_hr_manual if profile and profile.max_hr_manual else '' }}">
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div class="section-label">Injuries & Health</div>
+      <div class="field-group">
+        <label>Anything your coach should know</label>
+        <textarea name="injuries" rows="3" placeholder="e.g. Bad left knee, high blood pressure, avoid high impact...">{{ profile.injuries if profile and profile.injuries else '' }}</textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary" style="width:100%;padding:18px;font-size:1rem;margin-bottom:16px;">
+      Save Profile
+    </button>
+
+  </form>
+
+  <a href="/client/hr-zones" class="btn btn-ghost" style="display:block;text-align:center;padding:14px;border-radius:var(--radius);text-decoration:none;margin-bottom:30px;">
+    🫀 View My Heart Rate Zones →
+  </a>
+
+</div>
+
+<script>
+document.getElementById('avatar-input').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+
+  // Instant preview
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wrap = document.getElementById('avatar-wrap');
+    let img = document.getElementById('avatar-img');
+    const initials = document.getElementById('avatar-initials');
+    if (initials) initials.style.display = 'none';
+    if (!img) {
+      img = document.createElement('img');
+      img.id = 'avatar-img';
+      img.style.cssText = 'width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid var(--green);';
+      wrap.insertBefore(img, wrap.firstChild);
+    }
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  // Upload to server
+  const form = new FormData();
+  form.append('photo', file);
+  try {
+    const res = await fetch('/client/avatar', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.ok) { showToast('Photo saved ✓'); }
+    else { showToast('Upload failed — try again'); }
+  } catch(e) {
+    showToast('Upload failed — try again');
+  }
+});
+</script>
+
+{% endblock %}

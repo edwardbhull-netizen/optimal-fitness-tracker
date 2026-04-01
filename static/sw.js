@@ -58,7 +58,31 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+// Push notifications
+self.addEventListener('push', event => {
+  let data = { title: 'Optimal Fitness', body: 'You have a new message.' };
+  if (event.data) {
+    try { data = event.data.json(); } catch(e) { data.body = event.data.text(); }
+  }
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Optimal Fitness', {
+      body: data.body || '',
+      icon: '/static/logo.png',
+      badge: '/static/logo.png',
+      vibrate: [200, 100, 200],
+      data: { url: data.url || '/client/home' },
+    })
+  );
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/client/home';
+  event.waitUntil(clients.openWindow(url));
+});
+
   // Static assets: cache-first
+
   event.respondWith(
     caches.match(event.request).then(cached => {
       return cached || fetch(event.request).then(response => {

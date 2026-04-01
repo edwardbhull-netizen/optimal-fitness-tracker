@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect Your Device — Optimal Fitness</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .token-card { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+    .token-card h3 { color: var(--text); font-size: 1rem; margin: 0 0 6px; }
+    .token-card p { color: var(--grey-400); font-size: 0.85rem; margin: 0 0 14px; line-height: 1.5; }
+    .token-box {
+      background: var(--grey-50); border-radius: 10px; padding: 14px 16px;
+      font-family: monospace; font-size: 0.78rem; color: var(--green);
+      word-break: break-all; letter-spacing: 0.02em; margin-bottom: 12px;
+    }
+    .btn-copy {
+      width: 100%; padding: 12px; background: var(--green); color: #000;
+      border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 700; cursor: pointer;
+    }
+
+    /* Top tabs — what to sync */
+    .sync-tabs { display: flex; gap: 0; margin-bottom: 20px; background: var(--grey-100); border-radius: 12px; padding: 4px; }
+    .sync-tab {
+      flex: 1; padding: 10px; text-align: center; border-radius: 9px;
+      font-size: 0.85rem; font-weight: 600; color: var(--grey-400); cursor: pointer; border: none;
+      background: none;
+    }
+    .sync-tab.active { background: var(--white); color: var(--text); }
+
+    /* Device tabs */
+    .device-tabs { display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px; }
+    .device-tab {
+      padding: 10px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+      border: 1px solid var(--grey-200); background: var(--white); color: var(--grey-400);
+      cursor: pointer; white-space: nowrap; flex-shrink: 0;
+    }
+    .device-tab.active { background: var(--green); color: #000; border-color: var(--green); }
+
+    .steps-card { background: var(--white); border-radius: 16px; padding: 20px; margin-bottom: 16px; display: none; }
+    .steps-card.active { display: block; }
+    .steps-card h3 { color: var(--text); font-size: 1rem; margin: 0 0 16px; }
+    .step-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; }
+    .step-num {
+      background: var(--green); color: #000; font-weight: 800;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.85rem; flex-shrink: 0;
+    }
+    .step-text { color: var(--text); font-size: 0.9rem; line-height: 1.6; }
+    .step-text strong { color: var(--green); }
+    .step-text code {
+      background: var(--grey-50); padding: 2px 8px; border-radius: 4px;
+      font-size: 0.78rem; color: var(--grey-600); font-family: monospace;
+      word-break: break-all; display: inline-block; margin-top: 4px;
+    }
+
+    .sync-panel { display: none; }
+    .sync-panel.active { display: block; }
+
+    .info-box {
+      background: rgba(68,172,72,0.08); border: 1px solid rgba(68,172,72,0.2);
+      border-radius: 12px; padding: 14px 16px; margin-bottom: 20px;
+    }
+    .info-box p { color: var(--grey-600); font-size: 0.85rem; margin: 0; line-height: 1.5; }
+
+    .auto-badge {
+      display: inline-block; background: rgba(68,172,72,0.15); color: var(--green);
+      font-size: 0.7rem; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/client/home" class="back-btn">←</a>
+    <span>Connect Your Device</span>
+    <span></span>
+  </div>
+
+  <div class="container">
+
+    <!-- Token -->
+    <div class="token-card">
+      <h3>Your Personal Token</h3>
+      <p>Keep this private. Paste it into the setup steps below for each shortcut.</p>
+      <div class="token-box" id="token-display">{{ token }}</div>
+      <button class="btn-copy" onclick="copyToken()">Copy Token</button>
+    </div>
+
+    <!-- What to sync -->
+    <div class="sync-tabs">
+      <button class="sync-tab active" onclick="showSync('steps', this)">📊 Steps</button>
+      <button class="sync-tab" onclick="showSync('workout', this)">🏋️ Workouts</button>
+    </div>
+
+    <!-- STEPS panel -->
+    <div class="sync-panel active" id="sync-steps">
+      <div class="info-box">
+        <p>✅ <strong>Fully automatic</strong> — set up once, steps sync every night at 10:30pm without you doing anything.</p>
+      </div>
+      <div class="device-tabs" id="steps-device-tabs">
+        <div class="device-tab active" onclick="showDevice('steps', 'apple', this)">🍎 Apple Watch</div>
+        <div class="device-tab" onclick="showDevice('steps', 'garmin', this)">⌚ Garmin</div>
+        <div class="device-tab" onclick="showDevice('steps', 'samsung', this)">📱 Samsung</div>
+        <div class="device-tab" onclick="showDevice('steps', 'manual', this)">✏️ Manual</div>
+      </div>
+
+      <div class="steps-card active" id="steps-apple">
+        <span class="auto-badge">🤖 Automatic after setup</span>
+        <h3>Apple Watch — iOS Shortcuts</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Open <strong>Shortcuts</strong> app → tap <strong>+</strong> → name it <strong>Sync Steps to Optimal</strong></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Add Action → search <strong>Health</strong> → <strong>Get My Steps</strong> → set period to <strong>Today</strong></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">Add Action → <strong>Get Contents of URL</strong>. Set URL to:<br><code>{{ base_url }}/api/steps</code><br>Method: <strong>POST</strong>. Body fields:<br>• <code>steps</code> = Shortcut Input<br>• <code>token</code> = your token<br>• <code>source</code> = Apple Watch</div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-text">Save. Go to <strong>Automation</strong> tab → <strong>+</strong> → <strong>Time of Day</strong> → <strong>10:30pm daily</strong> → Run Immediately → select your shortcut</div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-text"><strong>Want hourly syncing?</strong> Repeat step 4 and add automations at <strong>8am, 12pm, 4pm, 8pm</strong> — each runs the same shortcut. Steps update throughout the day automatically.</div></div>
+        <div class="step-item"><div class="step-num">6</div><div class="step-text">✅ Done. You can also tap <strong>Sync Steps Now</strong> on the Activity page for an instant manual sync anytime.</div></div>
+      </div>
+
+      <div class="steps-card" id="steps-garmin">
+        <h3>Garmin — Via Apple Health</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Open <strong>Garmin Connect</strong> → Settings → <strong>Apple Health</strong> → turn on <strong>Sync Steps</strong></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Now follow the <strong>Apple Watch</strong> setup above — the shortcut reads from Apple Health, which your Garmin feeds into automatically</div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">✅ Garmin → Apple Health → Optimal. Fully automatic.</div></div>
+      </div>
+
+      <div class="steps-card" id="steps-samsung">
+        <h3>Samsung / Galaxy Watch</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Samsung doesn't share data with Apple Health. If you have an Android phone, install <strong>HTTP Shortcuts</strong> from the Play Store and set up a POST request to:<br><code>{{ base_url }}/api/steps</code><br>with your token and step count from Samsung Health</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Otherwise use Manual entry — it takes 10 seconds</div></div>
+      </div>
+
+      <div class="steps-card" id="steps-manual">
+        <h3>Manual Entry</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Go to the <strong>Activity</strong> page in the app</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Check your step count on your watch, type it in, tap Save</div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text"><a href="/client/activity" style="color:var(--green);">Go to Activity page →</a></div></div>
+      </div>
+    </div>
+
+    <!-- WORKOUT panel -->
+    <div class="sync-panel" id="sync-workout">
+      <div class="info-box">
+        <p>✅ <strong>Automatic after workout ends</strong> — finish a session on your Apple Watch and calories + HR sync to the app within seconds. No tapping required.</p>
+      </div>
+      <div class="device-tabs" id="workout-device-tabs">
+        <div class="device-tab active" onclick="showDevice('workout', 'apple', this)">🍎 Apple Watch</div>
+        <div class="device-tab" onclick="showDevice('workout', 'garmin', this)">⌚ Garmin</div>
+        <div class="device-tab" onclick="showDevice('workout', 'samsung', this)">📱 Samsung</div>
+      </div>
+
+      <div class="steps-card active" id="workout-apple">
+        <span class="auto-badge">🤖 Fires automatically when workout ends</span>
+        <h3>Apple Watch — Workout Sync</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Open <strong>Shortcuts</strong> → <strong>+</strong> → name it <strong>Sync Workout to Optimal</strong></div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Add Action → search <strong>Health</strong> → <strong>Find Workouts</strong> → set to <strong>Most Recent 1</strong></div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">Add Action → <strong>Get Details of Health Sample</strong>. Add three of these actions — one for <strong>Active Energy Burned</strong>, one for <strong>Average Heart Rate</strong>, one for <strong>Maximum Heart Rate</strong></div></div>
+        <div class="step-item"><div class="step-num">4</div><div class="step-text">Add Action → <strong>Get Contents of URL</strong>. Set URL to:<br><code>{{ base_url }}/api/workout/sync</code><br>Method: <strong>POST</strong>. Body fields:<br>• <code>token</code> = your token<br>• <code>calories</code> = Active Energy value<br>• <code>avg_hr</code> = Avg Heart Rate value<br>• <code>max_hr</code> = Max Heart Rate value<br>• <code>source</code> = Apple Watch</div></div>
+        <div class="step-item"><div class="step-num">5</div><div class="step-text">Save. Go to <strong>Automation</strong> tab → <strong>+</strong> → <strong>Workout</strong> → <strong>Ends</strong> → any workout type → Run Immediately → select your shortcut</div></div>
+        <div class="step-item"><div class="step-num">6</div><div class="step-text">✅ Done. Finish a workout on your watch → calories and HR appear in the app automatically.</div></div>
+      </div>
+
+      <div class="steps-card" id="workout-garmin">
+        <h3>Garmin — Via Apple Health</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">In <strong>Garmin Connect</strong> → Settings → <strong>Apple Health</strong> → enable <strong>Workouts</strong> sync</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Follow the <strong>Apple Watch</strong> workout setup above — once Garmin syncs workouts to Apple Health, the same shortcut picks them up</div></div>
+        <div class="step-item"><div class="step-num">3</div><div class="step-text">Note: there may be a short delay (1–2 mins) while Garmin syncs to Apple Health after a workout</div></div>
+      </div>
+
+      <div class="steps-card" id="workout-samsung">
+        <h3>Samsung / Galaxy Watch</h3>
+        <div class="step-item"><div class="step-num">1</div><div class="step-text">Automatic sync isn't possible from Samsung to an iPhone app. The best option is to manually enter calories and HR after each session on the session completion screen.</div></div>
+        <div class="step-item"><div class="step-num">2</div><div class="step-text">Android users can use <strong>HTTP Shortcuts</strong> app to build a one-tap sync after each workout</div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    function copyToken() {
+      const token = document.getElementById('token-display').innerText.trim();
+      navigator.clipboard.writeText(token).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => btn.textContent = 'Copy Token', 2000);
+      });
+    }
+
+    function showSync(type, btn) {
+      document.querySelectorAll('.sync-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.sync-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('sync-' + type).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function showDevice(panel, device, btn) {
+      // Hide all cards in this panel
+      document.querySelectorAll('#sync-' + panel + ' .steps-card').forEach(c => c.classList.remove('active'));
+      // Deactivate all tabs in this panel
+      document.querySelectorAll('#' + panel + '-device-tabs .device-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById(panel + '-' + device).classList.add('active');
+      btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

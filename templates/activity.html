@@ -183,7 +183,7 @@
   .cal-session {
     font-size: 0.85rem;
     font-weight: 600;
-    color: var(--black);
+    color: var(--text);
   }
 
   .cal-value {
@@ -290,6 +290,15 @@
         </div>
       </div>
       <button class="btn btn-primary" onclick="logSteps()">Save Steps</button>
+
+      <a href="shortcuts://run-shortcut?name=Sync%20Steps%20to%20Optimal"
+         class="btn btn-ghost"
+         style="display:block;text-align:center;margin-top:10px;font-size:0.9rem;padding:12px;border-radius:10px;text-decoration:none;">
+        🔄 Sync Steps Now from Watch
+      </a>
+      <div style="font-size:0.75rem;color:var(--grey-400);text-align:center;margin-top:6px;">
+        Opens iOS Shortcuts — runs your sync shortcut instantly
+      </div>
     </div>
   </div>
 
