@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Next Week's Emails — Optimal Fitness{% endblock %}
+{% block content %}
+
+<div class="topbar">
+  <a href="/coach" class="topbar-back">‹</a>
+  <span class="topbar-title">Next Week's Emails</span>
+  <span style="width:36px;"></span>
+</div>
+
+<div class="page">
+
+  <div style="font-size:0.8rem;color:var(--grey-400);margin-bottom:16px;">Week of {{ week_start }}</div>
+
+  {% if not has_sessions %}
+  <div style="background:var(--white);border-radius:14px;padding:16px;margin-bottom:20px;border-left:4px solid var(--grey-400);">
+    <div style="font-weight:700;margin-bottom:6px;">No sessions set for next week yet</div>
+    <div style="font-size:0.85rem;color:var(--grey-400);margin-bottom:12px;">The draft below is still ready to use, but it'll read better once next week's schedule is filled in.</div>
+    <a href="/coach/schedule?week=next" class="btn btn-primary" style="display:block;text-align:center;padding:12px;">Set Next Week's Schedule</a>
+  </div>
+  {% endif %}
+
+  <div style="background:var(--white);border-radius:14px;padding:16px;margin-bottom:16px;">
+    <div class="form-group" style="margin-bottom:14px;">
+      <label>Subject</label>
+      <input type="text" id="email-subject" value="{{ subject }}" style="width:100%;padding:10px;background:var(--grey-50);border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.9rem;font-family:inherit;box-sizing:border-box;color:var(--text);">
+    </div>
+    <div class="form-group" style="margin-bottom:0;">
+      <label>Body</label>
+      <textarea id="email-body" rows="16" style="width:100%;padding:10px;background:var(--grey-50);border:1.5px solid var(--grey-200);border-radius:var(--radius-sm);font-size:0.88rem;font-family:inherit;box-sizing:border-box;color:var(--text);resize:vertical;">{{ body }}</textarea>
+    </div>
+  </div>
+
+  <button onclick="copyEmail()" class="btn btn-ghost" style="width:100%;margin-bottom:10px;padding:14px;font-size:0.9rem;">📋 Copy Subject & Body</button>
+  <button onclick="openInEmailApp()" class="btn btn-primary" style="width:100%;padding:14px;font-size:0.9rem;">✉️ Open in Email App</button>
+  <div id="email-result" style="margin-top:10px;font-size:0.82rem;color:var(--grey-400);text-align:center;"></div>
+
+</div>
+
+<script>
+function copyEmail() {
+  const subject = document.getElementById('email-subject').value;
+  const body = document.getElementById('email-body').value;
+  const text = `Subject: ${subject}\n\n${body}`;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('email-result').textContent = 'Copied to clipboard.';
+  }).catch(() => {
+    document.getElementById('email-result').textContent = 'Could not copy — select and copy manually.';
+  });
+}
+
+function openInEmailApp() {
+  const subject = document.getElementById('email-subject').value;
+  const body = document.getElementById('email-body').value;
+  window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+</script>
+
+{% endblock %}

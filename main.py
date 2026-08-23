@@ -735,8 +735,27 @@ async def schedule_page(request: Request):
     session = require_client(request)
     if not session:
         return RedirectResponse("/", status_code=302)
-    import json
+    from datetime import date
     week_start = db.get_week_start()
+    enriched, _, _ = enrich_week_schedule(week_start)
+    today_name = date.today().strftime("%A")
+    return templates.TemplateResponse(request, "schedule.html", {
+        "client": session,
+        "schedule": enriched,
+        "week_start": week_start,
+        "today_name": today_name,
+    })
+
+
+def next_week_start():
+    from datetime import date, timedelta
+    return db.get_week_start((date.today() + timedelta(days=7)).isoformat())
+
+
+def enrich_week_schedule(week_start):
+    """Build the day-by-day view of a week's schedule, joined with session.json details."""
+    import json
+    from datetime import date, timedelta
     schedule = db.get_weekly_schedule(week_start)
     sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
     with open(sessions_path) as f:
@@ -747,7 +766,6 @@ async def schedule_page(request: Request):
             sessions_lookup[s["name"]] = {**s, "type": stype}
     days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
     schedule_dict = {row["day_of_week"]: row for row in schedule}
-    from datetime import date, timedelta
     week_monday = date.fromisoformat(week_start)
     day_offsets = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, "Friday": 4, "Saturday": 5}
     enriched = []
@@ -764,42 +782,44 @@ async def schedule_page(request: Request):
             "metric": session_info.get("metric"),
             "unit": session_info.get("unit"),
         })
-    today_name = date.today().strftime("%A")
-    return templates.TemplateResponse(request, "schedule.html", {
-        "client": session,
-        "schedule": enriched,
-        "week_start": week_start,
-        "today_name": today_name,
-    })
+    return enriched, sessions_data, sessions_lookup
+
+
+def build_schedule_email(enriched, week_start, coach_name):
+    from datetime import date, timedelta
+    week_monday = date.fromisoformat(week_start)
+    week_saturday = week_monday + timedelta(days=5)
+    subject = f"Optimal Fitness — Next Week's Schedule ({week_monday.strftime('%-d %b')}–{week_saturday.strftime('%-d %b')})"
+    lines = ["Hey team! 👋", "", "Here's what's coming up next week at Optimal Fitness:", ""]
+    has_sessions = False
+    for d in enriched:
+        if d["session_name"]:
+            has_sessions = True
+            lines.append(f"{d['day']} {d['date']} — {d['session_name']} ({d['session_type']})")
+            if d.get("competition"):
+                lines.append(f"   🏆 {d['competition']} — track your {d.get('metric', '')}")
+        else:
+            lines.append(f"{d['day']} {d['date']} — Rest day")
+    lines += ["", "See you on the floor!", coach_name]
+    body = "\n".join(lines)
+    return subject, body, has_sessions
 
 
 @app.get("/coach/schedule", response_class=HTMLResponse)
-async def coach_schedule_page(request: Request):
+async def coach_schedule_page(request: Request, week: str = "current"):
     session = require_coach(request)
     if not session:
         return RedirectResponse("/", status_code=302)
-    import json
-    week_start = db.get_week_start()
-    schedule = db.get_weekly_schedule(week_start)
-    sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
-    with open(sessions_path) as f:
-        sessions_data = json.load(f)
-    days_order = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-    schedule_dict = {row["day_of_week"]: row for row in schedule}
-    sessions_lookup = {}
-    for stype, slist in sessions_data.items():
-        for s in slist:
-            sessions_lookup[s["name"]] = {**s, "type": stype}
-    current = []
-    for day in days_order:
-        row = schedule_dict.get(day, {"day_of_week": day, "session_name": None, "session_type": None})
-        current.append({"day": day, "session_name": row.get("session_name"), "session_type": row.get("session_type")})
+    week_start = next_week_start() if week == "next" else db.get_week_start()
+    enriched, sessions_data, sessions_lookup = enrich_week_schedule(week_start)
+    current = [{"day": d["day"], "session_name": d["session_name"], "session_type": d["session_type"]} for d in enriched]
     return templates.TemplateResponse(request, "coach_schedule.html", {
         "coach": session,
         "schedule": current,
         "sessions_data": sessions_data,
         "sessions_lookup": sessions_lookup,
         "week_start": week_start,
+        "week": week,
     })
 
 
@@ -810,7 +830,8 @@ async def save_coach_schedule(request: Request):
         return JSONResponse({"error": "Not authenticated"}, status_code=401)
     import json
     form = await request.form()
-    week_start = db.get_week_start()
+    week = form.get("week", "current")
+    week_start = next_week_start() if week == "next" else db.get_week_start()
     sessions_path = os.path.join(BASE_DIR, "static", "sessions.json")
     with open(sessions_path) as f:
         sessions_data = json.load(f)
@@ -825,7 +846,26 @@ async def save_coach_schedule(request: Request):
             db.set_weekly_schedule(week_start, day, session_name, sessions_lookup[session_name])
         elif session_name == "":
             db.set_weekly_schedule(week_start, day, None, None)
-    return RedirectResponse("/coach/schedule", status_code=302)
+    return RedirectResponse(f"/coach/schedule?week={week}", status_code=302)
+
+
+@app.get("/coach/emails", response_class=HTMLResponse)
+async def coach_emails_page(request: Request):
+    session = require_coach(request)
+    if not session:
+        return RedirectResponse("/", status_code=302)
+    week_start = next_week_start()
+    enriched, _, _ = enrich_week_schedule(week_start)
+    coach_name = session.get("coach_name", "The Optimal Fitness Team")
+    subject, body, has_sessions = build_schedule_email(enriched, week_start, coach_name)
+    return templates.TemplateResponse(request, "coach_emails.html", {
+        "coach": session,
+        "week_start": week_start,
+        "schedule": enriched,
+        "subject": subject,
+        "body": body,
+        "has_sessions": has_sessions,
+    })
 
 
 @app.get("/client/activity", response_class=HTMLResponse)

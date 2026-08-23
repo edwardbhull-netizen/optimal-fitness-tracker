@@ -4,7 +4,7 @@
 
 <div class="topbar">
   <a href="/coach" class="topbar-back">‹</a>
-  <span class="topbar-title">This Week's Schedule</span>
+  <span class="topbar-title">{{ "Next Week's Schedule" if week == "next" else "This Week's Schedule" }}</span>
   <span style="width:36px;"></span>
 </div>
 
@@ -12,9 +12,19 @@
 
   <div style="font-size:0.8rem;color:var(--grey-400);margin-bottom:16px;">Week of {{ week_start }}</div>
 
+  <!-- Week switcher -->
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <a href="/coach/schedule?week=current" style="flex:1;text-align:center;padding:8px;border-radius:9px;font-size:0.82rem;font-weight:600;text-decoration:none;{% if week != 'next' %}background:var(--green);color:#000;{% else %}background:var(--grey-100);color:var(--grey-400);{% endif %}">This Week</a>
+    <a href="/coach/schedule?week=next" style="flex:1;text-align:center;padding:8px;border-radius:9px;font-size:0.82rem;font-weight:600;text-decoration:none;{% if week == 'next' %}background:var(--green);color:#000;{% else %}background:var(--grey-100);color:var(--grey-400);{% endif %}">Next Week</a>
+  </div>
+
+  {% if week == "next" %}
+  <a href="/coach/emails" class="btn btn-ghost" style="display:block;text-align:center;margin-bottom:16px;padding:10px;font-size:0.85rem;">✉️ Write Next Week's Email</a>
+  {% endif %}
+
   <!-- Tabs -->
   <div style="display:flex;gap:0;background:var(--grey-100);border-radius:12px;padding:4px;margin-bottom:20px;">
-    <button class="sched-tab active" onclick="showTab('view',this)" style="flex:1;padding:10px;border-radius:9px;font-size:0.85rem;font-weight:600;border:none;background:var(--white);color:var(--text);cursor:pointer;">📋 This Week</button>
+    <button class="sched-tab active" onclick="showTab('view',this)" style="flex:1;padding:10px;border-radius:9px;font-size:0.85rem;font-weight:600;border:none;background:var(--white);color:var(--text);cursor:pointer;">📋 View</button>
     <button class="sched-tab" onclick="showTab('edit',this)" style="flex:1;padding:10px;border-radius:9px;font-size:0.85rem;font-weight:600;border:none;background:none;color:var(--grey-400);cursor:pointer;">✏️ Edit</button>
   </div>
 
@@ -59,6 +69,7 @@
   <!-- EDIT TAB — set sessions -->
   <div id="tab-edit" style="display:none;">
     <form method="POST" action="/coach/schedule">
+      <input type="hidden" name="week" value="{{ week }}">
       {% for day_row in schedule %}
       <div class="form-group" style="margin-bottom:16px;">
         <label style="font-weight:700;font-size:0.9rem;margin-bottom:6px;display:block;">{{ day_row.day }}</label>
